@@ -64,7 +64,6 @@ DEPLOY_FILES = (
     "scripts/model.py",
     "scripts/plain_language.py",
     "scripts/prompts.py",
-    "scripts/prompts.py",
     "scripts/recall_lookup.py",
     "scripts/make_dataset.py",
     "templates/index.html",
