@@ -1,0 +1,40 @@
+name: tests
+
+# Runs the unit suite on every push and pull request. The tests never load model
+# weights -- generation is stubbed -- so this stays a couple of minutes even
+# though the dependency install is not small.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        # CPU-only wheels: the runner has no GPU and the full CUDA build would
+        # add several gigabytes to every run.
+        run: |
+          python -m pip install --upgrade pip
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+
+      - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          TOKENIZERS_PARALLELISM: "false"
+        run: python -m unittest discover -s tests -v
+
+      - name: Check for loose top-level code
+        # The project rule is that executable statements live in functions or
+        # under __main__. This catches accidental script-style code in modules.
+        run: python scripts/check_style.py

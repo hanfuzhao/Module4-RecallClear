@@ -33,8 +33,17 @@ from scripts.recall_lookup import (
 
 MAX_NOTICE_CHARACTERS = 6000
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("recallclear")
+def configure_logging() -> logging.Logger:
+    """Configure application logging and return the app logger.
+
+    Done at import rather than in ``main()`` because a WSGI server such as
+    gunicorn imports ``app`` directly and never calls ``main()``.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    return logging.getLogger("recallclear")
+
+
+logger = configure_logging()
 
 app = Flask(__name__)
 explainer_service = ExplainerService()

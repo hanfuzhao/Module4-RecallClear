@@ -419,6 +419,7 @@ def main() -> None:
     parser.add_argument("--epochs", type=float, default=None)
     parser.add_argument("--max-examples", type=int, default=None)
     args = parser.parse_args()
+    config.ensure_directories()
 
     if args.train:
         train_rows = read_jsonl(config.SPLIT_PATHS["train"])

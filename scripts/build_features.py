@@ -158,6 +158,7 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=config.RAW_RECALLS_PATH)
     parser.add_argument("--stats-output", type=Path, default=config.OUTPUTS_DIR / "dataset_stats.json")
     args = parser.parse_args()
+    config.ensure_directories()
 
     records = read_jsonl(args.input)
     print(f"Loaded {len(records)} raw recall notices from {args.input}")

@@ -158,6 +158,7 @@ def main() -> None:
     parser.add_argument("--start-year", type=int, default=config.RECALL_START_YEAR)
     parser.add_argument("--output", type=Path, default=config.RAW_RECALLS_PATH)
     args = parser.parse_args()
+    config.ensure_directories()
 
     records = collect_recalls(args.start_year)
     write_jsonl(records, args.output)
