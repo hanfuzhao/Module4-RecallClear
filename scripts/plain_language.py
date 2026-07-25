@@ -116,7 +116,7 @@ JARGON_LEXICON: dict[str, str] = {
     "may become detached": "can come loose",
     "become detached": "come loose",
     "detach": "come loose",
-    "fracture": "crack or break",
+    "fracture": "break",
     "degrade": "wear out",
     "degradation": "wearing out",
     "ingress": "getting in",
@@ -134,10 +134,12 @@ JARGON_LEXICON: dict[str, str] = {
     "increasing the risk of a crash": "making a crash more likely",
     "increase the risk of injury": "make injury more likely",
     "increasing the risk of injury": "making injury more likely",
-    "loss of motive power": "the car losing power",
-    "a loss of drive power": "the car losing power",
-    "loss of drive power": "the car losing power",
-    "loss of vehicle control": "losing control of the car",
+    # These read as noun phrases in the source ("can cause a loss of drive
+    # power"), so their replacements must stay noun phrases or the sentence
+    # falls apart.
+    "loss of motive power": "loss of engine power",
+    "loss of drive power": "loss of engine power",
+    "loss of vehicle control": "loss of control of the car",
     "unintended acceleration": "the car speeding up on its own",
     "engine stall": "the engine shutting off",
     "stall": "shut off",
@@ -223,8 +225,37 @@ def _as_bool(value: object) -> bool:
 # --------------------------------------------------------------------------- #
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+
+# Abbreviations whose full stop must not end a sentence. Without these,
+# "Porsche Cars North America, Inc. (Porsche) is recalling ..." splits after
+# "Inc." and the company name survives as its own "sentence", which then leaks
+# into the card as though it were the defect description.
+_ABBREVIATIONS = (
+    "Inc", "Co", "Corp", "Ltd", "LLC", "L.L.C", "Mfg", "Bros", "Div",
+    "No", "Nos", "St", "Ave", "Rd", "Dr", "Mr", "Mrs", "Ms", "Jr", "Sr",
+    "U.S", "U.S.A", "Approx", "approx", "vs", "etc", "e.g", "i.e", "Ph.D",
+)
+_PROTECT_ABBREVIATION = re.compile(
+    r"\b(" + "|".join(re.escape(item) for item in _ABBREVIATIONS) + r")\.(?=\s)"
+)
+_ABBREVIATION_PLACEHOLDER = "․"  # one-dot leader, absent from NHTSA text
+
+# Sentences that describe *which vehicles* are affected rather than what is
+# wrong with them. NHTSA writes these in several forms across the corpus.
 _POPULATION_SENTENCE = re.compile(
-    r"\bis recalling\b|\bhas recalled\b|\brecalling certain\b", re.IGNORECASE
+    r"\bis recalling\b|\bare recalling\b|\bhas recalled\b|\bhave recalled\b|"
+    r"\brecalling certain\b|\bare being recalled\b|\bis being recalled\b|"
+    r"\badditionally,? included\b|\balso included\b|\bincluded in this recall\b|"
+    r"\bthis recall (?:also )?(?:includes|covers|expands)\b|\brecall population\b",
+    re.IGNORECASE,
+)
+
+# A usable defect sentence needs a verb suggesting a failure or a state. This
+# filters out stray fragments left behind by the population sentences.
+_DEFECT_VERB = re.compile(
+    r"\b(may|can|could|will|might|is|are|was|were|has|have|do(?:es)?\s+not|"
+    r"fail|fails|failed|lack|lacks|incorrect|improper)\b",
+    re.IGNORECASE,
 )
 _PHONE = re.compile(r"\b1[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{4}\b")
 _CONTACT_SENTENCE = re.compile(
@@ -236,11 +267,24 @@ _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
 
 
 def split_sentences(text: str) -> list[str]:
-    """Split text into sentences, collapsing the double spaces NHTSA uses."""
+    """Split text into sentences, protecting abbreviations such as "Inc.".
+
+    NHTSA separates sentences with a double space, but company names end in an
+    abbreviation far too often for a naive full-stop split to work.
+    """
     cleaned = re.sub(r"\s+", " ", (text or "")).strip()
     if not cleaned:
         return []
-    return [part.strip() for part in _SENTENCE_SPLIT.split(cleaned) if part.strip()]
+    protected = _PROTECT_ABBREVIATION.sub(rf"\1{_ABBREVIATION_PLACEHOLDER}", cleaned)
+    parts = _SENTENCE_SPLIT.split(protected)
+    return [
+        part.replace(_ABBREVIATION_PLACEHOLDER, ".").strip() for part in parts if part.strip()
+    ]
+
+
+# Several replacements begin with an article, so substituting after an existing
+# article produces "from the the part that ...". Collapse those collisions.
+_ARTICLE_COLLISION = re.compile(r"\b(a|an|the)\s+(a|an|the)\b", re.IGNORECASE)
 
 
 def simplify_jargon(text: str) -> str:
@@ -253,14 +297,38 @@ def simplify_jargon(text: str) -> str:
             continue
         pattern = re.compile(rf"(?<![\w-]){re.escape(term)}(?![\w-])", re.IGNORECASE)
         result = pattern.sub(replacement, result)
-    return result
+    return _ARTICLE_COLLISION.sub(r"\2", result)
 
 
 def shorten(text: str, max_words: int = 34) -> str:
-    """Trim a sentence to a word budget, cutting at a clause break when possible."""
+    """Trim text to a word budget without leaving a sentence fragment.
+
+    Whole sentences are kept while they fit, because a clipped clause such as
+    "If the fob is dropped." reads as a mistake rather than as a summary. Only
+    when a single sentence is itself over budget is it cut, and then at a clause
+    boundary.
+    """
     words = text.split()
     if len(words) <= max_words:
         return text
+
+    sentences = split_sentences(text)
+    if len(sentences) > 1:
+        kept: list[str] = []
+        used = 0
+        for sentence in sentences:
+            length = len(sentence.split())
+            if kept and used + length > max_words:
+                break
+            kept.append(sentence)
+            used += length
+        if kept and used <= max_words:
+            return " ".join(kept)
+        text = sentences[0]  # first sentence alone is still too long; cut it
+        words = text.split()
+        if len(words) <= max_words:
+            return text
+
     clipped = " ".join(words[:max_words])
     for marker in (", which", ", and", ", or", ";", ","):
         head, sep, _tail = clipped.rpartition(marker)
@@ -270,12 +338,17 @@ def shorten(text: str, max_words: int = 34) -> str:
     return clipped.rstrip(" ,;") + "."
 
 
-def _tidy(text: str) -> str:
-    """Normalise whitespace, capitalisation, and terminal punctuation."""
+def _tidy(text: str, capitalise: bool = True) -> str:
+    """Normalise whitespace, capitalisation, and terminal punctuation.
+
+    ``capitalise=False`` is used for phrases spliced into the middle of a
+    sentence, such as the action that follows "The dealer will ...".
+    """
     cleaned = re.sub(r"\s+", " ", text).strip().strip(",;")
     if not cleaned:
         return ""
-    cleaned = cleaned[0].upper() + cleaned[1:]
+    if capitalise:
+        cleaned = cleaned[0].upper() + cleaned[1:]
     if not cleaned.endswith((".", "!", "?")):
         cleaned += "."
     return cleaned
@@ -325,10 +398,16 @@ def extract_defect(summary: str) -> str:
     insulators may loosen and contact the driveshaft ...". Only the second part
     describes the actual problem.
     """
-    sentences = [s for s in split_sentences(summary) if not _POPULATION_SENTENCE.search(s)]
-    if not sentences:
+    candidates = [
+        sentence
+        for sentence in split_sentences(summary)
+        if not _POPULATION_SENTENCE.search(sentence)
+        and len(sentence.split()) >= 5
+        and _DEFECT_VERB.search(sentence)
+    ]
+    if not candidates:
         return ""
-    return " ".join(sentences[:2])
+    return " ".join(candidates[:2])
 
 
 def extract_vehicles(summary: str) -> str:
@@ -416,23 +495,43 @@ def _build_action_steps(record: dict, urgency: str, fix: str) -> str:
     return _tidy(opening) + fix_clause + contact
 
 
+# Everything a Remedy sentence puts in front of the actual repair action.
+# NHTSA's most common phrasing is "<Maker> will notify owners, and dealers will
+# <action>", so the lead-in has to be removed or the card reads "The dealer will
+# Porsche will notify owners, and dealers will replace ...".
+_REMEDY_LEAD_IN = re.compile(
+    r"^.*?\b(?:authorized\s+|certified\s+)?(?:dealers?|technicians?|service centers?)\s+will\s+",
+    re.IGNORECASE,
+)
+_REMEDY_NOTIFY_ONLY = re.compile(
+    r"^[^,.]*\bwill\s+notify\s+owners?\b[,.]?\s*", re.IGNORECASE
+)
+
+
+def _strip_remedy_lead_in(sentence: str) -> str:
+    """Return just the repair action from a Remedy sentence."""
+    text = sentence.strip()
+    if _REMEDY_LEAD_IN.search(text):
+        return _REMEDY_LEAD_IN.sub("", text, count=1).strip()
+    # No "dealers will" clause: drop a bare "X will notify owners" preamble.
+    return _REMEDY_NOTIFY_ONLY.sub("", text, count=1).strip()
+
+
 def _lowercase_first(sentence: str) -> str:
-    """Lowercase a sentence's first letter unless it starts with a proper noun."""
-    text = simplify_jargon(sentence).strip()
-    text = re.sub(
-        r"^(dealers?|the dealer|dealers will|authorized dealers)\s+will\s+",
-        "",
-        text,
-        flags=re.IGNORECASE,
-    )
-    text = re.sub(r"^(dealers?|technicians?)\s+", "", text, flags=re.IGNORECASE)
+    """Reduce a Remedy sentence to a lowercase action phrase.
+
+    The result is spliced after "The dealer will ...", so it must start with the
+    bare verb and must not repeat the manufacturer's name.
+    """
+    text = simplify_jargon(_strip_remedy_lead_in(sentence))
     text = re.sub(r",?\s*at no cost to you\.?$", ".", text, flags=re.IGNORECASE)
+    text = re.sub(r",?\s*free of charge\.?$", ".", text, flags=re.IGNORECASE)
     text = text.strip()
     if not text:
         return ""
     if text[:2].isupper():  # acronym such as "ECU" -- leave it alone
-        return _tidy(text)
-    return _tidy(text[0].lower() + text[1:])
+        return _tidy(text, capitalise=False)
+    return _tidy(text[0].lower() + text[1:], capitalise=False)
 
 
 def _short_manufacturer(name: str) -> str:
@@ -451,7 +550,10 @@ def build_card(record: dict) -> RecallCard | None:
     """
     defect = extract_defect(record.get("summary") or "")
     consequence = record.get("consequence") or ""
-    if len(defect.split()) < 8 or len(consequence.split()) < 5:
+    # Five words is enough once the boilerplate is gone: "The front lower
+    # control arms may fracture." is a complete, usable defect description.
+    # The verb requirement in extract_defect does the real filtering.
+    if len(defect.split()) < 5 or len(consequence.split()) < 5:
         return None
 
     urgency, reason = triage_urgency(record)
