@@ -34,8 +34,18 @@ SPLIT_PATHS = {
     "test": PROCESSED_DIR / "test.jsonl",
 }
 
-for _directory in (RAW_DIR, PROCESSED_DIR, OUTPUTS_DIR, MODELS_DIR):
-    _directory.mkdir(parents=True, exist_ok=True)
+MANAGED_DIRECTORIES = (RAW_DIR, PROCESSED_DIR, OUTPUTS_DIR, MODELS_DIR)
+
+
+def ensure_directories() -> None:
+    """Create the project's data and model directories if they are missing.
+
+    Called from each entry point rather than on import: a module that makes
+    directories as a side effect of being imported surprises anyone who imports
+    it for a constant, and breaks on a read-only filesystem.
+    """
+    for directory in MANAGED_DIRECTORIES:
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 # --------------------------------------------------------------------------- #

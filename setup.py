@@ -120,6 +120,7 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> int:
     """Run the requested pipeline stages and report timings."""
     arguments = parse_arguments()
+    config.ensure_directories()
     selected = [stage for stage in STAGE_ORDER if stage in arguments.stages]
 
     for index, stage in enumerate(selected, start=1):
