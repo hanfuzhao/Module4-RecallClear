@@ -168,13 +168,19 @@ DEMO_EXAMPLE_COUNT = 6
 # off for offline demos or if the upstream API is unavailable.
 ENABLE_LIVE_LOOKUP = os.environ.get("RECALLCLEAR_LIVE_LOOKUP", "1") == "1"
 
-# Generation budget for the deployed app. Cards run about 150 tokens, so this
-# leaves headroom without letting a runaway generation stall a CPU host.
-APP_MAX_NEW_TOKENS = int(os.environ.get("RECALLCLEAR_MAX_NEW_TOKENS", "300"))
+# Generation budget for the deployed app. A card is about 130 tokens, so this
+# leaves headroom while stopping the untuned model -- which does not emit a stop
+# token and would otherwise ramble -- from stalling a CPU host.
+APP_MAX_NEW_TOKENS = int(os.environ.get("RECALLCLEAR_MAX_NEW_TOKENS", "220"))
 
 # Where the app loads the model from. Set RECALLCLEAR_ADAPTER_REPO to the Hub
 # id when running on a host that has no local training artefacts.
 APP_ADAPTER_SOURCE = os.environ.get("RECALLCLEAR_ADAPTER_REPO", str(ADAPTER_DIR))
+
+# Int8 dynamic quantisation roughly halves CPU generation latency. It is a
+# no-op where the quantisation engine is missing (PyTorch on Apple silicon),
+# so it is safe to leave on by default.
+QUANTISE_ON_CPU = os.environ.get("RECALLCLEAR_QUANTISE", "1") == "1"
 
 # Public project links, referenced by the model card and the README.
 PROJECT_REPO_URL = os.environ.get(
