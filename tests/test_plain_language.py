@@ -16,6 +16,8 @@ from scripts.plain_language import (
     extract_phone,
     extract_urgency,
     flesch_kincaid_grade,
+    shorten,
+    split_sentences,
     format_notice,
     jargon_rate,
     parse_card,
@@ -198,6 +200,76 @@ class ParseCardTests(unittest.TestCase):
 
     def test_missing_urgency_section_returns_none(self) -> None:
         self.assertIsNone(extract_urgency("Some prose with no card structure at all."))
+
+
+class BoilerplateRegressionTests(unittest.TestCase):
+    """Regressions for defects found by inspecting generated cards.
+
+    Each of these produced visibly broken output in the training targets before
+    it was fixed, which is worse than a crash: the model would have learned to
+    reproduce the mistake.
+    """
+
+    PORSCHE = {
+        "manufacturer": "Porsche Cars North America, Inc.",
+        "summary": (
+            "Porsche Cars North America, Inc. (Porsche) is recalling certain model year "
+            "2015 Porsche 918 vehicles.  The front lower control arms may fracture."
+        ),
+        "consequence": "The fracture of a lower control arm while driving increases the risk of a crash.",
+        "remedy": (
+            "Porsche will notify owners, and dealers will replace the front lower control "
+            "arms, free of charge.  Owners may contact Porsche at 1-800-767-7243."
+        ),
+        "park_it": True,
+        "park_outside": False,
+    }
+
+    def test_abbreviation_does_not_end_a_sentence(self) -> None:
+        """"Inc." must not split, or the company name becomes its own sentence."""
+        sentences = split_sentences(
+            "Porsche Cars North America, Inc. (Porsche) is recalling cars.  The arms may fail."
+        )
+        self.assertEqual(len(sentences), 2)
+        self.assertIn("is recalling", sentences[0])
+
+    def test_company_name_never_leaks_into_the_defect(self) -> None:
+        card = build_card(self.PORSCHE)
+        self.assertNotIn("Porsche Cars North America", card.whats_wrong)
+        self.assertTrue(card.whats_wrong.startswith("The front lower control arms"))
+
+    def test_remedy_lead_in_is_removed(self) -> None:
+        """"X will notify owners, and dealers will Y" must reduce to just Y."""
+        card = build_card(self.PORSCHE)
+        self.assertNotIn("will notify owners", card.what_to_do)
+        self.assertIn("The dealer will replace the front lower control arms", card.what_to_do)
+
+    def test_spliced_action_is_not_recapitalised(self) -> None:
+        card = build_card(self.PORSCHE)
+        self.assertNotIn("The dealer will Replace", card.what_to_do)
+
+    def test_additionally_included_is_treated_as_boilerplate(self) -> None:
+        defect = extract_defect(
+            "Subaru is recalling certain 2010-2012 Legacy vehicles.  "
+            "Additionally included are certain 2013 Outback vehicles that received new fobs.  "
+            "If the fob is dropped, the engine may start unexpectedly."
+        )
+        self.assertNotIn("Additionally included", defect)
+        self.assertIn("engine may start unexpectedly", defect)
+
+    def test_shorten_keeps_whole_sentences(self) -> None:
+        text = "The bolt may loosen over time. The wheel can then move out of position."
+        self.assertEqual(shorten(text, max_words=12), "The bolt may loosen over time.")
+
+    def test_shorten_never_returns_a_bare_fragment(self) -> None:
+        text = "If the fob is dropped. The engine may unexpectedly start and run for fifteen minutes."
+        self.assertTrue(shorten(text, max_words=10).endswith("."))
+
+    def test_noun_phrase_substitutions_keep_grammar(self) -> None:
+        """Replacements for noun phrases must stay noun phrases."""
+        result = simplify_jargon("This can cause a loss of drive power.")
+        self.assertIn("a loss of engine power", result)
+        self.assertNotIn("a the car", result)
 
 
 class ReadabilityTests(unittest.TestCase):
