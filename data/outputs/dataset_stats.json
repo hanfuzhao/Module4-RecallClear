@@ -1,0 +1,60 @@
+{
+  "splits": {
+    "train": {
+      "count": 10064,
+      "urgency_distribution": {
+        "GET IT FIXED SOON": 9799,
+        "STOP DRIVING": 150,
+        "PARK OUTSIDE": 81,
+        "SCHEDULE IT": 34
+      },
+      "distinct_brands": 579,
+      "gold_do_not_drive": 150,
+      "gold_fire_risk_when_parked": 83,
+      "mean_notice_grade_level": 11.8,
+      "mean_card_grade_level": 6.93,
+      "mean_notice_jargon_rate": 2.79,
+      "mean_card_jargon_rate": 0.06
+    },
+    "validation": {
+      "count": 529,
+      "urgency_distribution": {
+        "GET IT FIXED SOON": 515,
+        "STOP DRIVING": 10,
+        "PARK OUTSIDE": 4
+      },
+      "distinct_brands": 154,
+      "gold_do_not_drive": 10,
+      "gold_fire_risk_when_parked": 4,
+      "mean_notice_grade_level": 11.87,
+      "mean_card_grade_level": 6.95,
+      "mean_notice_jargon_rate": 2.67,
+      "mean_card_jargon_rate": 0.07
+    },
+    "test": {
+      "count": 855,
+      "urgency_distribution": {
+        "GET IT FIXED SOON": 812,
+        "STOP DRIVING": 33,
+        "SCHEDULE IT": 5,
+        "PARK OUTSIDE": 5
+      },
+      "distinct_brands": 16,
+      "gold_do_not_drive": 33,
+      "gold_fire_risk_when_parked": 5,
+      "mean_notice_grade_level": 11.83,
+      "mean_card_grade_level": 7.14,
+      "mean_notice_jargon_rate": 3.02,
+      "mean_card_jargon_rate": 0.11
+    }
+  },
+  "held_out_brands": [
+    "SUBARU",
+    "MAZDA",
+    "TESLA",
+    "MITSUBISHI",
+    "VOLVO",
+    "PORSCHE",
+    "WINNEBAGO"
+  ]
+}
