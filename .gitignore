@@ -24,6 +24,8 @@ env/
 data/raw/*.json
 data/raw/*.jsonl
 data/raw/*.zip
+data/raw/*.probed.txt
+!data/raw/README.md
 
 # Training scratch: checkpoints and merged full-precision weights are large.
 # Only the LoRA adapter (~10 MB) is committed, under models/adapter/.

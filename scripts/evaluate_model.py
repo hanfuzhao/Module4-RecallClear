@@ -328,6 +328,7 @@ def main() -> None:
     parser.add_argument("--max-new-tokens", type=int, default=config.MAX_NEW_TOKENS)
     parser.add_argument("--output", type=Path, default=config.OUTPUTS_DIR / "evaluation.json")
     args = parser.parse_args()
+    config.ensure_directories()
 
     results = evaluate(
         sample_size=args.sample, max_new_tokens=args.max_new_tokens, batch_size=args.batch_size

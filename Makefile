@@ -6,7 +6,7 @@ export PYTHONPATH := $(CURDIR)
 export KMP_DUPLICATE_LIB_OK := TRUE
 export TOKENIZERS_PARALLELISM := false
 
-.PHONY: help install data features train evaluate demo app test clean all
+.PHONY: help install data features train evaluate report demo app test clean all
 
 help:  ## Show the available targets
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -25,6 +25,10 @@ train:  ## Fine-tune the LoRA adapter
 
 evaluate:  ## Score the adapter against the untuned baselines
 	$(PYTHON) -m scripts.evaluate_model --sample 150
+	$(PYTHON) -m scripts.report_results
+
+report:  ## Regenerate the README results table from evaluation.json
+	$(PYTHON) -m scripts.report_results
 
 demo:  ## Print one before/after comparison to the terminal
 	$(PYTHON) -m scripts.demo
