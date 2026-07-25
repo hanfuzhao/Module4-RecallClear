@@ -270,6 +270,7 @@ class RecallExplainer:
         adapter_path: Path | str | None = config.ADAPTER_DIR,
         base_model_id: str = config.BASE_MODEL_ID,
         device: str | None = None,
+        quantise: bool = config.QUANTISE_ON_CPU,
     ) -> None:
         self.device = device or config.resolve_device()
         self.base_model_id = base_model_id
@@ -282,6 +283,26 @@ class RecallExplainer:
         if self.has_adapter:
             model = PeftModel.from_pretrained(model, str(adapter_path))
         self.model = model.to(self.device).eval()
+        self.is_quantised = False
+        if self.device == "cpu" and quantise:
+            self.is_quantised = self._quantise_for_cpu()
+
+    def _quantise_for_cpu(self) -> bool:
+        """Apply int8 dynamic quantisation to the linear layers, if supported.
+
+        Roughly halves generation latency on a CPU host, which is what the free
+        deployment target runs on. The quantisation engine is unavailable in
+        some builds -- notably PyTorch on Apple silicon -- so a failure here is
+        expected and simply leaves the model in full precision.
+        """
+        try:
+            self.model = torch.quantization.quantize_dynamic(
+                self.model, {torch.nn.Linear}, dtype=torch.qint8
+            )
+            return True
+        except (RuntimeError, NotImplementedError) as error:
+            print(f"int8 quantisation unavailable, serving full precision ({error})")
+            return False
 
     def _messages_for(self, notice: str, mode: str) -> list[dict]:
         """Return the chat messages appropriate to a comparison mode."""
