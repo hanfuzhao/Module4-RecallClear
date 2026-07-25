@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecallClear — vehicle recall notices in plain language</title>
+  <meta name="description" content="Rewrites official NHTSA vehicle safety recall notices into plain language a car owner can act on.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🚗</span>
+      <div>
+        <h1>RecallClear</h1>
+        <p class="tagline">Official vehicle recall notices, rewritten so an owner can act on them.</p>
+      </div>
+    </div>
+    <div class="model-badge" title="Base model with a LoRA adapter fine-tuned on 10,064 real NHTSA notices">
+      <span class="dot" id="health-dot" aria-hidden="true"></span>
+      <span>{{ base_model }} + LoRA</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <section class="panel" aria-labelledby="input-heading">
+    <h2 id="input-heading">1. Choose a recall notice</h2>
+
+    <div class="tabs" role="tablist" aria-label="How to supply a notice">
+      {% if lookup_enabled %}
+      <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-lookup" id="tab-lookup">Look up by recall number</button>
+      {% endif %}
+      <button class="tab {% if not lookup_enabled %}is-active{% endif %}" role="tab"
+              aria-selected="{{ 'false' if lookup_enabled else 'true' }}"
+              aria-controls="panel-paste" id="tab-paste">Paste the notice text</button>
+    </div>
+
+    {% if lookup_enabled %}
+    <div class="tab-panel" id="panel-lookup" role="tabpanel" aria-labelledby="tab-lookup">
+      <label class="field-label" for="campaign-input">NHTSA campaign number (on your recall letter)</label>
+      <div class="lookup-row">
+        <input id="campaign-input" type="text" inputmode="latin" placeholder="e.g. 23V123000"
+               autocomplete="off" spellcheck="false" aria-describedby="lookup-help">
+        <button class="btn btn-secondary" id="lookup-btn" type="button">Fetch notice</button>
+      </div>
+      <p class="help" id="lookup-help">Fetched live from the NHTSA recalls API. Nothing you type is stored.</p>
+    </div>
+    {% endif %}
+
+    <div class="tab-panel {% if lookup_enabled %}is-hidden{% endif %}" id="panel-paste" role="tabpanel" aria-labelledby="tab-paste">
+      <label class="field-label" for="notice-input">Recall notice text</label>
+      <textarea id="notice-input" rows="9" spellcheck="false"
+                placeholder="Paste the Summary, Consequence and Remedy text from your recall letter or the NHTSA website."></textarea>
+    </div>
+
+    {% if examples %}
+    <div class="examples">
+      <span class="examples-label">Or try a held-out example:</span>
+      <div class="chip-row">
+        {% for example in examples %}
+        <button class="chip" type="button" data-example-index="{{ loop.index0 }}"
+                title="{{ example.manufacturer }} — {{ example.campaign_number }}">
+          {{ example.manufacturer.split(',')[0].split('(')[0].strip() }}
+          <span class="chip-sub">{{ example.component.split(':')[0]|title }}</span>
+        </button>
+        {% endfor %}
+      </div>
+      <p class="help">Every example is from a manufacturer the model never saw during training.</p>
+    </div>
+    {% endif %}
+
+    <div class="actions">
+      <button class="btn btn-primary" id="explain-btn" type="button">Explain this recall</button>
+      <label class="switch">
+        <input type="checkbox" id="compare-toggle">
+        <span>Also show the untuned base model</span>
+      </label>
+    </div>
+    <p class="help" id="status-line" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="panel is-hidden" id="official-panel" aria-labelledby="official-heading">
+    <h2 id="official-heading" class="visually-hidden">Official NHTSA warnings</h2>
+    <div id="official-banners"></div>
+  </section>
+
+  <section class="panel is-hidden" id="result-panel" aria-labelledby="result-heading">
+    <div class="panel-head">
+      <h2 id="result-heading">2. Plain-language summary</h2>
+      <div class="readability" id="readability-strip"></div>
+    </div>
+
+    <article class="card" id="card-output">
+      <div class="card-urgency" id="card-urgency"></div>
+      <dl class="card-body" id="card-body"></dl>
+    </article>
+
+    <details class="raw-details">
+      <summary>Show the original notice and the raw model output</summary>
+      <div class="raw-grid">
+        <div>
+          <h3>Original notice</h3>
+          <pre id="raw-notice" class="raw"></pre>
+        </div>
+        <div>
+          <h3>Model output</h3>
+          <pre id="raw-output" class="raw"></pre>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel is-hidden" id="baseline-panel" aria-labelledby="baseline-heading">
+    <h2 id="baseline-heading">Before / after</h2>
+    <p class="help">Same model weights, same prompt. The only difference is the LoRA adapter.</p>
+    <div class="compare-grid">
+      <div class="compare-col">
+        <h3>Before <span class="tag tag-muted">base model, no adapter</span></h3>
+        <pre class="raw" id="baseline-output"></pre>
+        <ul class="mini-metrics" id="baseline-metrics"></ul>
+      </div>
+      <div class="compare-col">
+        <h3>After <span class="tag tag-good">fine-tuned</span></h3>
+        <pre class="raw" id="tuned-output"></pre>
+        <ul class="mini-metrics" id="tuned-metrics"></ul>
+      </div>
+    </div>
+  </section>
+
+  {% if evaluation %}
+  <section class="panel" aria-labelledby="eval-heading">
+    <h2 id="eval-heading">What the fine-tune actually bought</h2>
+    <p class="help">Measured on {{ evaluation.examples }} notices from seven held-out manufacturers.</p>
+    <div class="metric-grid">
+      <div class="metric">
+        <span class="metric-label">Card format produced correctly</span>
+        <span class="metric-value">{{ '%.0f'|format((evaluation.format_tuned or 0) * 100) }}%</span>
+        <span class="metric-delta">base {{ '%.0f'|format((evaluation.format_base or 0) * 100) }}% · few-shot {{ '%.0f'|format((evaluation.format_few_shot or 0) * 100) }}%</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Reading grade level</span>
+        <span class="metric-value">{{ evaluation.grade_tuned }}</span>
+        <span class="metric-delta">original notices {{ evaluation.grade_notice }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Urgency triage (macro-F1)</span>
+        <span class="metric-value">{{ '%.2f'|format(evaluation.macro_f1_tuned or 0) }}</span>
+        <span class="metric-delta">base {{ '%.2f'|format(evaluation.macro_f1_base or 0) }} · few-shot {{ '%.2f'|format(evaluation.macro_f1_few_shot or 0) }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Prompt tokens per request</span>
+        <span class="metric-value">{{ evaluation.prompt_tokens_tuned|round|int }}</span>
+        <span class="metric-delta">few-shot baseline needs {{ evaluation.prompt_tokens_few_shot|round|int }}</span>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="panel notes" aria-labelledby="limits-heading">
+    <h2 id="limits-heading">Read this before you rely on it</h2>
+    <ul>
+      <li><strong>This is a reading aid, not legal or safety advice.</strong> The official notice is the authority. It is always shown alongside the rewrite.</li>
+      <li><strong>Do-not-drive and park-outside warnings come from NHTSA, not from the model.</strong> Evaluation showed the model cannot reliably infer them from notice text, so the banner above is driven by the agency's own flags.</li>
+      <li><strong>A 360M-parameter model can still get things wrong.</strong> Check the original text before making a decision, and call your dealer with the campaign number.</li>
+      <li><strong>Recall repairs are free.</strong> If a shop asks you to pay for a recall repair, that is not a recall repair.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>
+      Recall data: <a href="https://data.transportation.gov/d/6axg-epim" rel="noopener">NHTSA / U.S. DOT open data</a> (public domain).
+      Built for an AI course hackathon — not affiliated with NHTSA.
+    </p>
+  </div>
+</footer>
+
+<script id="examples-data" type="application/json">{{ examples|tojson }}</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
