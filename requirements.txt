@@ -1,0 +1,13 @@
+# Full development environment: data collection, training, evaluation, and app.
+# The deployed Space installs the smaller requirements-deploy.txt instead.
+
+torch>=2.4
+transformers>=4.44
+peft>=0.12
+datasets>=2.20
+accelerate>=0.33
+safetensors>=0.4
+
+requests>=2.31
+flask>=3.0
+gunicorn>=21.2
