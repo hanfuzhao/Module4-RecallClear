@@ -1,0 +1,11 @@
+# Inference-only dependencies for the deployed web app (CPU host).
+# Kept minimal so the container image stays small and boots quickly.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+transformers>=4.44
+peft>=0.12
+safetensors>=0.4
+requests>=2.31
+flask>=3.0
+gunicorn>=21.2

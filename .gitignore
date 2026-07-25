@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+*.key
+
+# Large / regenerable data. The small curated files needed to reproduce the
+# demo are force-added (see README "What is committed").
+data/raw/*.json
+data/raw/*.jsonl
+data/raw/*.zip
+
+# Training scratch: checkpoints and merged full-precision weights are large.
+# Only the LoRA adapter (~10 MB) is committed, under models/adapter/.
+models/checkpoints/
+models/merged/
+models/*.bin
+models/*.safetensors
+runs/
+wandb/
+
+# Local caches
+.cache/
+*.log
