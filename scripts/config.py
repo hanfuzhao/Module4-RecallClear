@@ -86,6 +86,7 @@ MAX_TRAIN_EXAMPLES: int | None = None
 BASE_MODEL_ID = "HuggingFaceTB/SmolLM2-360M-Instruct"
 HUB_ADAPTER_REPO = "HanfuZhao781/recallclear-smollm2-360m-lora"
 HUB_MERGED_REPO = "HanfuZhao781/recallclear-smollm2-360m"
+HUB_SPACE_ID = "HanfuZhao781/recallclear"
 
 MAX_SEQUENCE_LENGTH = 640  # covers the 95th-percentile example; 5% are truncated
 MAX_NEW_TOKENS = 320
