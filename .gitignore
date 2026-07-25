@@ -27,6 +27,12 @@ data/raw/*.zip
 data/raw/*.probed.txt
 !data/raw/README.md
 
+# The training corpus regenerates from the raw download in about ten seconds
+# (`make features`), so it is not worth 100 MB of repository history. The test
+# split is committed because the deployed app serves its demo notices from it.
+data/processed/train.jsonl
+data/processed/recall_cards.jsonl
+
 # Training scratch: checkpoints and merged full-precision weights are large.
 # Only the LoRA adapter (~10 MB) is committed, under models/adapter/.
 models/checkpoints/
