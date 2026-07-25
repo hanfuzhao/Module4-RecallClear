@@ -284,3 +284,11 @@ a { color: var(--accent); }
   .brand h1 { font-size: 21px; }
   .panel { padding: 18px 16px; }
 }
+
+.paste-notice {
+  margin: 14px 0 0; padding: 11px 14px;
+  background: var(--surface-alt); border: 1px solid var(--border);
+  border-left: 3px solid var(--warn); border-radius: 8px;
+  font-size: 13.5px; color: var(--text-muted);
+}
+.paste-notice strong { color: var(--text); }
