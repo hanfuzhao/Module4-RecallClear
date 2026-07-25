@@ -147,6 +147,38 @@ def per_class_recall(gold: list[str], predicted: list[str | None]) -> dict[str, 
     return report
 
 
+def urgency_confusion(gold: list[str], predicted: list[str | None]) -> dict:
+    """Report the confusion pairs, and count safety-relevant downgrades.
+
+    Averaged scores hide the one error that carries a real-world cost: calling a
+    notice that NHTSA flagged as do-not-drive or park-outside something less
+    urgent. That count is surfaced on its own.
+    """
+    severity = {level: index for index, level in enumerate(URGENCY_LEVELS)}
+    pairs = Counter(
+        (gold_label, predicted_label or "NOT STATED")
+        for gold_label, predicted_label in zip(gold, predicted)
+    )
+
+    downgrades = 0
+    for gold_label, predicted_label in zip(gold, predicted):
+        if gold_label not in (URGENCY_STOP_DRIVING, URGENCY_PARK_OUTSIDE):
+            continue
+        # A missing prediction is treated as a downgrade: no warning was given.
+        if predicted_label is None or severity[predicted_label] > severity[gold_label]:
+            downgrades += 1
+
+    high_stakes = sum(
+        1 for label in gold if label in (URGENCY_STOP_DRIVING, URGENCY_PARK_OUTSIDE)
+    )
+    return {
+        "pairs": {f"{gold_label} -> {predicted_label}": count for (gold_label, predicted_label), count in pairs.most_common()},
+        "safety_downgrades": downgrades,
+        "high_stakes_examples": high_stakes,
+        "safety_downgrade_rate": round(downgrades / high_stakes, 4) if high_stakes else None,
+    }
+
+
 def score_generations(rows: list[dict], generations: list[str], elapsed: float) -> dict:
     """Compute the full metric set for one system's generations."""
     gold_urgency = [row["urgency"] for row in rows]
@@ -164,6 +196,7 @@ def score_generations(rows: list[dict], generations: list[str], elapsed: float) 
         ),
         "urgency_macro_f1": macro_f1(gold_urgency, predicted_urgency, URGENCY_LEVELS),
         "urgency_per_class": per_class_recall(gold_urgency, predicted_urgency),
+        "urgency_confusion": urgency_confusion(gold_urgency, predicted_urgency),
         "grade_level": round(sum(flesch_kincaid_grade(text) for text in generations) / count, 2),
         "jargon_rate": round(sum(jargon_rate(text) for text in generations) / count, 3),
         "free_repair_stated": round(sum(states_free_repair(text) for text in generations) / count, 4),

@@ -24,6 +24,7 @@
   var examples = [];
   var currentRecord = null;
   var isBusy = false;
+  var modelIsResident = false;
 
   /* -- helpers ------------------------------------------------------------ */
 
@@ -246,6 +247,7 @@
         currentRecord = data.record;
         elements.noticeInput.value = data.notice;
         renderOfficialWarnings(data.official_warnings);
+        hidePasteNotice();
         activateTab("tab-paste", "panel-paste");
         setBusy(false, "Loaded " + data.record.campaign_number + " — " + data.record.manufacturer + ".");
       })
@@ -262,13 +264,17 @@
       return;
     }
     var includeBaseline = elements.compareToggle.checked;
-    setBusy(true, includeBaseline
-      ? "Running the base model and the fine-tuned model ..."
-      : "Rewriting the notice ...");
+    // The first request pays for loading the weights, which on a cold CPU host
+    // takes long enough that silence reads as a hang.
+    var message = modelIsResident
+      ? (includeBaseline ? "Running the base model and the fine-tuned model ..." : "Rewriting the notice ...")
+      : "Warming up the model — the first request takes a little longer ...";
+    setBusy(true, message);
     hide(elements.baselinePanel);
 
     postJson("/api/explain", { notice: notice, include_baseline: includeBaseline })
       .then(function (data) {
+        modelIsResident = true;
         renderCard(data.tuned, notice, data.notice_metrics);
         renderComparison(data.base, data.tuned);
         setBusy(false, "Done. The original notice is always shown below the summary.");
@@ -288,8 +294,21 @@
     elements.noticeInput.value = example.notice;
     currentRecord = null;
     renderOfficialWarnings(null);
+    showPasteNotice();
     activateTab("tab-paste", "panel-paste");
     setStatus(example.manufacturer + " — " + example.campaign_number + " loaded. Press “Explain this recall”.", false, false);
+  }
+
+  function showPasteNotice() {
+    // On the paste path NHTSA's own flags are unavailable, so the do-not-drive
+    // banner cannot appear. Say so rather than letting its absence read as "safe".
+    var banner = elements.pasteNotice;
+    if (banner) { banner.classList.remove("is-hidden"); }
+  }
+
+  function hidePasteNotice() {
+    var banner = elements.pasteNotice;
+    if (banner) { banner.classList.add("is-hidden"); }
   }
 
   function checkHealth() {
@@ -297,6 +316,7 @@
       .then(function (response) { return response.json(); })
       .then(function (data) {
         if (data.status === "ok") { elements.healthDot.classList.add("is-ready"); }
+        modelIsResident = Boolean(data.model_loaded);
       })
       .catch(function () { /* health is cosmetic; ignore failures */ });
   }
@@ -324,7 +344,8 @@
       tunedOutput: byId("tuned-output"),
       baselineMetrics: byId("baseline-metrics"),
       tunedMetrics: byId("tuned-metrics"),
-      healthDot: byId("health-dot")
+      healthDot: byId("health-dot"),
+      pasteNotice: byId("paste-notice")
     };
 
     var payload = byId("examples-data");
