@@ -81,21 +81,26 @@ HELD_OUT_BRANDS = [
 VALIDATION_FRACTION = 0.05
 RANDOM_SEED = 20260725
 
-# Upper bound on training rows. ``None`` uses every available example.
-MAX_TRAIN_EXAMPLES: int | None = None
+# Upper bound on training rows actually read during fine-tuning. The dataset
+# itself is ~11.6k cards; training reads a 4k subset because CPU training costs
+# 1.6 s/sample and format learning saturates well before the full corpus.
+MAX_TRAIN_EXAMPLES: int | None = 4000
 
 
 # --------------------------------------------------------------------------- #
 # Model + training
 # --------------------------------------------------------------------------- #
 
-# SmolLM2-360M-Instruct is chosen deliberately over a 0.5B model: its 49k
-# vocabulary (versus Qwen's 152k) shrinks the training-time logits tensor by
-# three times, which is the difference between a 2-hour and a 26-hour epoch on
-# an M1 Pro, and it also halves latency on the free CPU host that serves the app.
-BASE_MODEL_ID = "HuggingFaceTB/SmolLM2-360M-Instruct"
-HUB_ADAPTER_REPO = "HanfuZhao781/recallclear-smollm2-360m-lora"
-HUB_MERGED_REPO = "HanfuZhao781/recallclear-smollm2-360m"
+# SmolLM2-135M-Instruct, chosen after benchmarking three candidates on the
+# actual constraint set (a 16 GB M1 Pro to train on, a free CPU host to serve
+# on). Qwen2.5-0.5B's 152k vocabulary put an epoch at ~26 h; SmolLM2-360M
+# trained acceptably but needed >30 s per card on CPU at inference, which is
+# not a usable app. The 135M model trains at 1.6 s/sample on CPU and generates
+# a card in ~4 s (33 tok/s) -- and the task is a fixed-format rewrite, which is
+# exactly what a small model can learn well from a few thousand examples.
+BASE_MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct"
+HUB_ADAPTER_REPO = "HanfuZhao781/recallclear-smollm2-135m-lora"
+HUB_MERGED_REPO = "HanfuZhao781/recallclear-smollm2-135m"
 HUB_SPACE_ID = "HanfuZhao781/recallclear"
 
 MAX_SEQUENCE_LENGTH = 640  # covers the 95th-percentile example; 5% are truncated
@@ -141,19 +146,22 @@ TRAINING = TrainingSettings()
 
 
 def resolve_device() -> str:
-    """Return the best available torch device string for this machine.
+    """Return the torch device used for training and local inference.
 
-    Apple Silicon (``mps``) is preferred locally, CUDA when present, and CPU as
-    the fallback used by the deployed Space.
+    CUDA when present, otherwise CPU -- including on Apple silicon. That is a
+    measured decision, not an oversight: on the development machine the MPS
+    backend degraded to 4x slower than CPU under memory pressure (163 s vs
+    40 s per optimizer step), because Metal caches buffers per tensor shape
+    and a 16 GB unified-memory machine ends up swapping. Set
+    RECALLCLEAR_DEVICE=mps to override where MPS is healthy.
     """
     import torch
 
-    if os.environ.get("RECALLCLEAR_FORCE_CPU") == "1":
-        return "cpu"
+    override = os.environ.get("RECALLCLEAR_DEVICE")
+    if override:
+        return override
     if torch.cuda.is_available():
         return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
     return "cpu"
 
 
