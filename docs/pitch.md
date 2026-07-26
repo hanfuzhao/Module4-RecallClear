@@ -55,19 +55,22 @@ side by side.
 - **Before:** prose. No sections, or invented ones. No urgency call.
 - **After:** the five sections, every time, in order.
 
-Then the measured version `[eval]`:
+Then the measured version (150 held-out notices, 7 unseen manufacturers):
 
 | | base | few-shot | **fine-tuned** |
 |---|---|---|---|
-| card format produced correctly | | | |
-| reading grade | | | |
-| urgency macro-F1 | | | |
-| prompt tokens per request | | | |
+| card format produced correctly | 0% | 63% | **100%** |
+| reading grade (notices: 12.7) | 13.0 | 8.0 | **7.3** |
+| jargon per 100 words | 2.5 | 2.3 | **0.7** |
+| says the repair is free | 0% | 66% | **100%** |
+| prompt tokens per request | 427 | 1,334 | **427** |
+| seconds per card | 4.4 | 7.9 | **3.1** |
 
-**Do not skip the few-shot column.** Prompting alone teaches the format, so
+**Do not skip the few-shot column.** Prompting alone gets format to 63%, so
 naming that baseline out loud is what makes the comparison credible. The
-fine-tune's argument is that it does the same job at roughly a fifth of the
-prompt tokens, which on a CPU host is the difference between usable and not.
+fine-tune finishes the job — 100%, every card — at a third of the prompt
+tokens and less than half the latency, which on a CPU host is the difference
+between usable and not.
 
 ## 2:45 — 4:00 · Risks, ethics, and the best table in the project
 
@@ -134,9 +137,9 @@ decisions follow from measurements rather than from taste.
 - **Model:** `HanfuZhao781/recallclear-smollm2-360m-lora`
 - **Live app:** _link_
 
-Closing line: a 35 MB adapter, trained in about an hour on a laptop, takes a
-government notice from grade 11.8 to grade 7 — and knows which decision it is
-not allowed to make.
+Closing line: a 20 MB adapter, trained in 25 minutes on a laptop's CPU, takes
+a government notice from grade 12.7 to grade 7.3 — and the system knows which
+decision the model is not allowed to make.
 
 ---
 

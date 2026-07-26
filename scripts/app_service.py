@@ -66,9 +66,13 @@ class ExplainerService:
 
                     import torch
 
-                    # Use every core the host offers; the serving default can
-                    # otherwise be capped below the container's CPU allocation.
-                    torch.set_num_threads(max(1, os.cpu_count() or 1))
+                    # Match torch to the container's CPU *allocation*, not the
+                    # host's core count: os.cpu_count() sees the physical
+                    # machine, and oversubscribing threads on a 4-vCPU quota
+                    # measurably slowed generation. OMP_NUM_THREADS is set to
+                    # the allocation in the Dockerfile.
+                    allocated = int(os.environ.get("OMP_NUM_THREADS", "0") or 0)
+                    torch.set_num_threads(allocated if allocated > 0 else max(1, os.cpu_count() or 1))
                     self._explainer = RecallExplainer(
                         adapter_path=self.adapter_source, base_model_id=self.base_model_id
                     )

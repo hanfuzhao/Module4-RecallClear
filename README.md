@@ -114,7 +114,35 @@ entirely** (Subaru, Mazda, Tesla, Mitsubishi, Volvo, Porsche, Winnebago), so
 these numbers are generalisation, not memorisation.
 
 <!-- RESULTS:START -->
-_Populated by `make evaluate`; see [`data/outputs/evaluation.json`](data/outputs/evaluation.json)._
+
+| | base (zero-shot) | base + 2 examples | **fine-tuned** |
+|---|---|---|---|
+| Card format produced correctly | 0% | 63% | 100% |
+| Urgency triage (macro-F1) | 0.00 | 0.03 | 0.21 |
+| Reading grade level (lower is better) | 12.99 | 7.95 | 7.3 |
+| Jargon per 100 words (lower is better) | 2.516 | 2.337 | 0.731 |
+| States the repair is free | 0% | 66% | 100% |
+| Invented a phone number (lower is better) | 0% | 2% | 1% |
+| Grounding in the source notice | 0.88 | 0.59 | 0.54 |
+| Output length (words) | 141 | 110.1 | 116.7 |
+| Prompt tokens per request | 427.1 | 1334.1 | 427.1 |
+| Seconds per card | 4.38 | 7.87 | 3.13 |
+
+The original notices score **12.73** on reading grade and **2.912** on jargon; the rule-built reference cards score **7.22** and **0.236**.
+
+### Rare, high-stakes classes
+
+| | support | notices with explicit warning text | best achievable recall |
+|---|---|---|---|
+| STOP DRIVING | 33 | 24 | 73% |
+| PARK OUTSIDE | 5 | 5 | 100% |
+
+| | base (zero-shot) | base + 2 examples | **fine-tuned** |
+|---|---|---|---|
+| recall, STOP DRIVING | 0% | 6% | 0% |
+| recall, PARK OUTSIDE | 0% | 0% | 0% |
+| safety downgrades (lower is better) | 100% | 95% | 100% |
+
 <!-- RESULTS:END -->
 
 Three systems are compared, all using the same weights:
