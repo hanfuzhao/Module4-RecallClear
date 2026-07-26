@@ -2,12 +2,13 @@
 
 **Official vehicle safety recall notices, rewritten so a car owner can act on them.**
 
-A LoRA fine-tune of `HuggingFaceTB/SmolLM2-360M-Instruct` that turns the dense,
+A LoRA fine-tune of `HuggingFaceTB/SmolLM2-135M-Instruct` that turns the dense,
 legalistic text of a U.S. vehicle recall notice into a five-part plain-language
-card. Trained on **11,448 real NHTSA recall notices**.
+card. Built from a dataset of **11,591 real NHTSA recall notices** — and trained,
+deliberately, on a laptop CPU.
 
 - **Live app:** _see Deployment below_
-- **Model:** `HanfuZhao781/recallclear-smollm2-360m-lora` on the Hugging Face Hub
+- **Model:** `HanfuZhao781/recallclear-smollm2-135m-lora` on the Hugging Face Hub
 - **Data:** [NHTSA Recalls Data](https://data.transportation.gov/d/6axg-epim), U.S. DOT open data (public domain)
 
 ---
@@ -44,22 +45,41 @@ WHAT IT COSTS:     nothing — recall repairs are always free
 
 | | |
 |---|---|
-| **Base model** | `HuggingFaceTB/SmolLM2-360M-Instruct` (360M parameters) |
+| **Base model** | `HuggingFaceTB/SmolLM2-135M-Instruct` (135M parameters) |
 | **Method** | LoRA (rank 16, alpha 32, dropout 0.05) via PEFT |
 | **Adapted modules** | all attention and MLP projections (`q,k,v,o,gate,up,down`) |
-| **Trainable parameters** | 8.7M of 370M — **2.3%** |
+| **Trainable parameters** | 4.9M of 139M — **3.5%** |
 | **Objective** | causal LM loss on the assistant turn only; prompt tokens masked |
-| **Training data** | 10,064 notices (8,461 after the length filter) |
-| **Schedule** | 1 epoch, effective batch 16, lr 2e-4, cosine decay |
-| **Hardware** | Apple M1 Pro (MPS), no GPU cluster |
-| **Artefact** | ~35 MB adapter, small enough to commit and to load on a free CPU host |
+| **Training data** | 4,000-notice subset of the 11,591-card dataset |
+| **Schedule** | 1 pass, effective batch 16, lr 2e-4, cosine decay |
+| **Hardware** | Apple M1 Pro, **CPU** (see below) |
+| **Artefact** | ~20 MB adapter, committed to the repo and loadable on a free CPU host |
 
-Why a 360M model rather than something larger: the app has to run inference on a
-free CPU host, and the whole point is that a targeted adapter lets a small model
-beat a much larger one at one specific job. SmolLM2's 49k vocabulary also makes
-training tractable on a laptop — a 0.5B model with a 152k vocabulary needed an
-estimated 26 hours per epoch on the same machine, almost entirely because of the
-size of the loss logits.
+### The model size and the device were both measured, not assumed
+
+Three base models were benchmarked on the actual constraint set — a 16 GB M1
+Pro to train on, a free two-core CPU host to serve on:
+
+| candidate | vocab | training | inference, one card on CPU |
+|---|---|---|---|
+| Qwen2.5-0.5B-Instruct | 152k | ~26 h/epoch (MPS) | — |
+| SmolLM2-360M-Instruct | 49k | 2.4 s/sample (CPU) | 30+ s |
+| **SmolLM2-135M-Instruct** | 49k | **1.6 s/sample (CPU)** | **~4 s** |
+
+Qwen's 152k vocabulary triples the training-time logits tensor, which is the
+whole 26-hour story. The 360M model trains fine but produces an app where every
+card takes half a minute — usability is graded here. The 135M model makes the
+app feel instant and lets the same wall-clock budget cover 3× the training data.
+The task is a fixed-format rewrite with a controlled vocabulary, which is
+exactly the regime where a small model gives up the least.
+
+**Why the CPU and not the GPU:** measured on identical batches, Apple's Metal
+backend ran an optimizer step in **163 s against the CPU's 40 s** — the
+accelerator was four times slower than the cores next to it, degrading further
+as the run went on. Metal caches buffers per tensor shape and never releases
+them; on a unified-memory machine that ends in swap. Padding to shape buckets
+helped but did not cure it, so training runs on CPU by default
+(`RECALLCLEAR_DEVICE=mps` overrides where MPS is healthy).
 
 ## Where the training targets come from
 
