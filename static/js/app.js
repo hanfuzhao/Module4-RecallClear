@@ -90,23 +90,32 @@
 
   /* -- rendering ---------------------------------------------------------- */
 
-  function renderOfficialWarnings(warnings) {
+  function renderOfficialWarnings(warnings, source) {
     var container = elements.officialBanners;
     container.innerHTML = "";
     if (!warnings || (!warnings.do_not_drive && !warnings.fire_risk_when_parked)) {
       hide(elements.officialPanel);
       return;
     }
+    var fromText = source === "text";
     if (warnings.do_not_drive) {
       container.appendChild(buildBanner(
-        "banner-danger", "⛔", "NHTSA says: do not drive this vehicle",
-        "This is the agency's own do-not-drive designation for this campaign, not the model's opinion. Contact your dealer before driving."
+        "banner-danger", "⛔",
+        fromText ? "This notice says: do not drive this vehicle"
+                 : "NHTSA says: do not drive this vehicle",
+        fromText
+          ? "Detected from the notice's own wording by a rule, not by the model. Contact your dealer before driving."
+          : "This is the agency's own do-not-drive designation for this campaign, not the model's opinion. Contact your dealer before driving."
       ));
     }
     if (warnings.fire_risk_when_parked) {
       container.appendChild(buildBanner(
-        "banner-warn", "🔥", "NHTSA says: park outside, away from buildings",
-        "This campaign carries a fire risk even when the vehicle is parked and switched off."
+        "banner-warn", "🔥",
+        fromText ? "This notice says: park outside, away from buildings"
+                 : "NHTSA says: park outside, away from buildings",
+        fromText
+          ? "Detected from the notice's own wording by a rule, not by the model. There is a fire risk even when parked."
+          : "This campaign carries a fire risk even when the vehicle is parked and switched off."
       ));
     }
     show(elements.officialPanel);
@@ -246,7 +255,7 @@
       .then(function (data) {
         currentRecord = data.record;
         elements.noticeInput.value = data.notice;
-        renderOfficialWarnings(data.official_warnings);
+        renderOfficialWarnings(data.official_warnings, "official");
         hidePasteNotice();
         activateTab("tab-paste", "panel-paste");
         setBusy(false, "Loaded " + data.record.campaign_number + " — " + data.record.manufacturer + ".");
@@ -275,6 +284,11 @@
     postJson("/api/explain", { notice: notice, include_baseline: includeBaseline })
       .then(function (data) {
         modelIsResident = true;
+        // The lookup path already showed the authoritative flags; on the paste
+        // path, fall back to warnings detected from the notice's own wording.
+        if (!currentRecord && data.text_warnings) {
+          renderOfficialWarnings(data.text_warnings, "text");
+        }
         renderCard(data.tuned, notice, data.notice_metrics);
         renderComparison(data.base, data.tuned);
         setBusy(false, "Done. The original notice is always shown below the summary.");

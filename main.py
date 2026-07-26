@@ -130,6 +130,9 @@ def explain() -> tuple:
     try:
         result = {
             "notice_metrics": ExplainerService.notice_metrics(notice),
+            # Deterministic safety layer: top-level warnings are detected from
+            # the notice text, never taken from the model's own urgency line.
+            "text_warnings": ExplainerService.text_warnings(notice),
             "tuned": explainer_service.explain(notice),
         }
         if include_baseline:

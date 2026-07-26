@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 
 from scripts.plain_language import (
+    detect_text_warnings,
     CARD_SECTIONS,
     URGENCY_FIX_SOON,
     URGENCY_PARK_OUTSIDE,
@@ -270,6 +271,43 @@ class BoilerplateRegressionTests(unittest.TestCase):
         result = simplify_jargon("This can cause a loss of drive power.")
         self.assertIn("a loss of engine power", result)
         self.assertNotIn("a the car", result)
+
+
+class TextWarningDetectionTests(unittest.TestCase):
+    """The deterministic safety layer for the paste path.
+
+    Two training runs showed the model defaults to the majority urgency even on
+    notices containing explicit warning language, so these warnings must come
+    from rules. False negatives here are the failure mode with a safety cost.
+    """
+
+    def test_do_not_drive_wording_is_detected(self) -> None:
+        for phrase in (
+            "Owners are advised not to drive these vehicles until repaired.",
+            "Do not drive this vehicle.",
+            "The vehicle should not be driven until the recall repair is complete.",
+        ):
+            self.assertTrue(detect_text_warnings(phrase)["do_not_drive"], phrase)
+
+    def test_park_outside_wording_is_detected(self) -> None:
+        for phrase in (
+            "Owners should park outside and away from structures until repaired.",
+            "Park the vehicle outdoors due to the risk of fire while parked.",
+        ):
+            self.assertTrue(detect_text_warnings(phrase)["fire_risk_when_parked"], phrase)
+
+    def test_ordinary_notices_trigger_nothing(self) -> None:
+        text = (
+            "Dealers will replace the brake hose, free of charge. The vehicle may be "
+            "driven to the dealership for the repair appointment."
+        )
+        result = detect_text_warnings(text)
+        self.assertFalse(result["do_not_drive"])
+        self.assertFalse(result["fire_risk_when_parked"])
+
+    def test_empty_text_is_safe(self) -> None:
+        result = detect_text_warnings("")
+        self.assertFalse(any(result.values()))
 
 
 class ReadabilityTests(unittest.TestCase):
