@@ -17,6 +17,7 @@ from scripts.make_dataset import read_jsonl
 from scripts.model import RecallExplainer
 from scripts.plain_language import (
     CARD_SECTIONS,
+    detect_text_warnings,
     URGENCY_LEVELS,
     build_card,
     flesch_kincaid_grade,
@@ -123,6 +124,16 @@ class ExplainerService:
             "jargon_rate": jargon_rate(notice),
             "words": len(notice.split()),
         }
+
+    @staticmethod
+    def text_warnings(notice: str) -> dict:
+        """Detect do-not-drive / park-outside wording in raw notice text.
+
+        The deterministic safety layer for the paste path: two training runs
+        showed the model defaults to the majority urgency even when the notice
+        says "do not drive", so the banner must never depend on it.
+        """
+        return detect_text_warnings(notice)
 
     @staticmethod
     def official_warnings(record: dict) -> dict:

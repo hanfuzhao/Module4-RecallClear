@@ -176,6 +176,40 @@ URGENCY_LEVELS = (
     URGENCY_SCHEDULE,
 )
 
+# Notice wording that carries the agency's own top-level warnings. Two training
+# runs established that the fine-tuned model cannot be trusted to surface these
+# (it defaults to the majority urgency even on notices it trained on), so the
+# application detects them deterministically and never leaves the call to the
+# model. Patterns are anchored to warning phrasing, not topics: "do not drive"
+# matches, "the vehicle may be driven to the dealer" must not.
+_TEXT_WARNING_STOP = re.compile(
+    r"do not drive|not to drive|stop driving|should not be driven|"
+    r"cease (?:driving|use)|discontinue (?:driving|use)|park (?:the vehicle )?immediately",
+    re.IGNORECASE,
+)
+_TEXT_WARNING_PARK_OUTSIDE = re.compile(
+    r"park (?:it |the vehicle |vehicles? )?outside|park outdoors|"
+    r"away from (?:structures|buildings|homes|other vehicles)|do not park (?:in|inside|near)|"
+    r"risk of fire (?:even )?(?:while|when) (?:parked|the vehicle is parked)",
+    re.IGNORECASE,
+)
+
+
+def detect_text_warnings(notice: str) -> dict[str, bool]:
+    """Detect NHTSA's top-level owner warnings in the notice text itself.
+
+    Used by the app on the paste path, where the agency's structured flags are
+    unavailable. Text detection recovers the ~60-73% of high-stakes notices
+    that state the warning in words; the rest are only knowable from the flags,
+    which is why lookup-by-campaign-number remains the recommended path.
+    """
+    text = notice or ""
+    return {
+        "do_not_drive": bool(_TEXT_WARNING_STOP.search(text)),
+        "fire_risk_when_parked": bool(_TEXT_WARNING_PARK_OUTSIDE.search(text)),
+    }
+
+
 # Consequence wording that indicates a crash/fire/injury pathway. Used only for
 # the two lower rungs of the ladder; the top two rungs come from NHTSA flags.
 _HARM_PATTERNS = re.compile(
