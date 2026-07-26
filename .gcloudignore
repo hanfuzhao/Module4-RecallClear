@@ -1,0 +1,15 @@
+# Upload only what the container build needs. Unlike .gitignore, this must
+# INCLUDE the committed adapter weights and demo data.
+.git/
+.github/
+notebooks/
+tests/
+docs/
+data/raw/
+data/processed/train.jsonl
+data/processed/recall_cards.jsonl
+models/checkpoints/
+models/merged/
+__pycache__/
+*.log
+.DS_Store

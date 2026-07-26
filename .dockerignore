@@ -1,0 +1,15 @@
+# Keep the image to what inference needs: the app, the adapter, the demo
+# notices, and the metrics summary. Training artefacts and the raw corpus
+# would add ~150 MB for nothing.
+data/raw/
+data/processed/train.jsonl
+data/processed/recall_cards.jsonl
+models/checkpoints/
+models/merged/
+notebooks/
+tests/
+docs/
+.git/
+.github/
+__pycache__/
+*.log

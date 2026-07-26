@@ -54,6 +54,10 @@ park-outside warnings come from NHTSA's own flags, not from the model.
 """
 
 # Files copied into the Space repository, relative to the project root.
+OPTIONAL_DEPLOY_FILES = (
+    "data/outputs/evaluation.json",
+)
+
 DEPLOY_FILES = (
     "Dockerfile",
     "requirements-deploy.txt",
@@ -70,7 +74,6 @@ DEPLOY_FILES = (
     "static/css/styles.css",
     "static/js/app.js",
     "data/processed/test.jsonl",
-    "data/outputs/evaluation.json",
 )
 
 DEPLOY_DIRECTORIES = ("models/adapter",)
@@ -92,10 +95,11 @@ def _stage_files(staging: Path) -> list[str]:
     import shutil
 
     missing: list[str] = []
-    for relative in dict.fromkeys(DEPLOY_FILES):  # de-duplicate, keep order
+    for relative in DEPLOY_FILES + OPTIONAL_DEPLOY_FILES:
         source = config.PROJECT_ROOT / relative
         if not source.exists():
-            missing.append(relative)
+            if relative not in OPTIONAL_DEPLOY_FILES:
+                missing.append(relative)
             continue
         destination = staging / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
