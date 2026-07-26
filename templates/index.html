@@ -3,190 +3,230 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RecallClear — vehicle recall notices in plain language</title>
-  <meta name="description" content="Rewrites official NHTSA vehicle safety recall notices into plain language a car owner can act on.">
+  <title>RecallClear — recall letters, translated</title>
+  <meta name="description" content="Rewrites official NHTSA vehicle safety recall notices into plain language a car owner can act on. Three models, side by side.">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='4' y='24' width='92' height='52' rx='10' fill='%23f7b500' stroke='%23111' stroke-width='6'/><text x='50' y='62' font-family='Arial Black' font-size='34' text-anchor='middle' fill='%23111'>RC</text></svg>">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<header class="site-header">
-  <div class="wrap header-inner">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">🚗</span>
-      <div>
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <div class="plate-lockup">
+      <span class="plate" aria-hidden="true">RECAL·CLR</span>
+      <div class="lockup-text">
         <h1>RecallClear</h1>
-        <p class="tagline">Official vehicle recall notices, rewritten so an owner can act on them.</p>
+        <p class="tagline">Your recall letter, translated from federal to human.</p>
       </div>
     </div>
-    <div class="model-badge" title="Base model with a LoRA adapter fine-tuned on 10,064 real NHTSA notices">
+    <div class="odometer" title="Fine-tuned on real NHTSA recall notices">
+      <span class="odometer-label">TRAINED ON</span>
+      <span class="odometer-value">11,591</span>
+      <span class="odometer-label">REAL RECALLS</span>
       <span class="dot" id="health-dot" aria-hidden="true"></span>
-      <span>{{ base_model }} + LoRA</span>
     </div>
   </div>
+  <div class="hazard" aria-hidden="true"></div>
 </header>
 
 <main id="main" class="wrap">
 
-  <section class="panel" aria-labelledby="input-heading">
-    <h2 id="input-heading">1. Choose a recall notice</h2>
+  <!-- ================= STEP 1 : the letter ================= -->
+  <section class="stage" aria-labelledby="input-heading">
+    <div class="stage-marker" aria-hidden="true">MILE 1</div>
+    <h2 id="input-heading">Start with a real notice</h2>
 
     <div class="tabs" role="tablist" aria-label="How to supply a notice">
       {% if lookup_enabled %}
-      <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-lookup" id="tab-lookup">Look up by recall number</button>
+      <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-lookup" id="tab-lookup">
+        I have a recall number
+      </button>
       {% endif %}
       <button class="tab {% if not lookup_enabled %}is-active{% endif %}" role="tab"
               aria-selected="{{ 'false' if lookup_enabled else 'true' }}"
-              aria-controls="panel-paste" id="tab-paste">Paste the notice text</button>
+              aria-controls="panel-paste" id="tab-paste">I'll paste the letter</button>
     </div>
 
     {% if lookup_enabled %}
     <div class="tab-panel" id="panel-lookup" role="tabpanel" aria-labelledby="tab-lookup">
-      <label class="field-label" for="campaign-input">NHTSA campaign number (on your recall letter)</label>
+      <label class="field-label" for="campaign-input">NHTSA campaign number — top corner of your letter</label>
       <div class="lookup-row">
-        <input id="campaign-input" type="text" inputmode="latin" placeholder="e.g. 23V123000"
+        <input id="campaign-input" type="text" inputmode="latin" placeholder="23V123000"
                autocomplete="off" spellcheck="false" aria-describedby="lookup-help">
-        <button class="btn btn-secondary" id="lookup-btn" type="button">Fetch notice</button>
+        <button class="btn btn-dark" id="lookup-btn" type="button">Pull the file</button>
       </div>
-      <p class="help" id="lookup-help">Fetched live from the NHTSA recalls API. Nothing you type is stored.</p>
+      <p class="help" id="lookup-help">Fetched live from NHTSA. Nothing you type is stored.</p>
     </div>
     {% endif %}
 
     <div class="tab-panel {% if lookup_enabled %}is-hidden{% endif %}" id="panel-paste" role="tabpanel" aria-labelledby="tab-paste">
-      <label class="field-label" for="notice-input">Recall notice text</label>
-      <textarea id="notice-input" rows="9" spellcheck="false"
-                placeholder="Paste the Summary, Consequence and Remedy text from your recall letter or the NHTSA website."></textarea>
+      <label class="field-label" for="notice-input">The letter, word for word</label>
+      <div class="letter">
+        <div class="letter-head" aria-hidden="true">
+          <span>IMPORTANT SAFETY RECALL</span>
+          <span class="letter-stamp">FEDERAL LAW</span>
+        </div>
+        <textarea id="notice-input" rows="9" spellcheck="false"
+                  placeholder="Paste the Summary, Consequence and Remedy paragraphs here — the parts nobody finishes reading."></textarea>
+      </div>
     </div>
 
     {% if examples %}
-    <div class="examples">
-      <span class="examples-label">Or try a held-out example:</span>
+    <div class="glovebox">
+      <span class="glovebox-label">Or grab one from the glovebox — brands the model never trained on:</span>
       <div class="chip-row">
         {% for example in examples %}
         <button class="chip" type="button" data-example-index="{{ loop.index0 }}"
-                title="{{ example.manufacturer }} — {{ example.campaign_number }}">
-          {{ example.manufacturer.split(',')[0].split('(')[0].strip() }}
-          <span class="chip-sub">{{ example.component.split(':')[0]|title }}</span>
+                title="{{ example.subject }}">
+          <span class="chip-make">{{ example.manufacturer.split(',')[0].split('(')[0].strip() }}</span>
+          <span class="chip-sub">{{ example.component.split(':')[0]|lower }}</span>
         </button>
         {% endfor %}
       </div>
-      <p class="help">Every example is from a manufacturer the model never saw during training.</p>
     </div>
     {% endif %}
 
-    <div class="actions">
-      <button class="btn btn-primary" id="explain-btn" type="button">Explain this recall</button>
-      <label class="switch">
-        <input type="checkbox" id="compare-toggle">
-        <span>Also show the untuned base model</span>
-      </label>
-    </div>
     <p class="paste-notice is-hidden" id="paste-notice">
-      NHTSA publishes its official <strong>do-not-drive</strong> and
-      <strong>park-outside</strong> designations as separate flags, not as words in
-      the notice. For pasted text, a rule scans the wording for those warnings —
-      but only a lookup by campaign number sees the agency's actual flags, so
-      prefer that when you have the number.
+      Heads up: NHTSA's official <strong>do-not-drive</strong> and <strong>park-outside</strong>
+      designations are separate flags, not words in the letter. For pasted text a rule scans
+      the wording; the lookup path sees the agency's actual flags.
     </p>
     <p class="help" id="status-line" role="status" aria-live="polite"></p>
   </section>
 
-  <section class="panel is-hidden" id="official-panel" aria-labelledby="official-heading">
-    <h2 id="official-heading" class="visually-hidden">Official NHTSA warnings</h2>
+  <!-- ================= official warnings ================= -->
+  <section class="stage stage-alert is-hidden" id="official-panel" aria-labelledby="official-heading">
+    <h2 id="official-heading" class="visually-hidden">Official warnings</h2>
     <div id="official-banners"></div>
   </section>
 
-  <section class="panel is-hidden" id="result-panel" aria-labelledby="result-heading">
-    <div class="panel-head">
-      <h2 id="result-heading">2. Plain-language summary</h2>
-      <div class="readability" id="readability-strip"></div>
+  <!-- ================= STEP 2 : the garage ================= -->
+  <section class="stage" aria-labelledby="garage-heading">
+    <div class="stage-marker" aria-hidden="true">MILE 2</div>
+    <h2 id="garage-heading">Put it on the lift — three ways</h2>
+    <p class="lede">
+      Same 135M-parameter engine in every bay. The only difference is what we did to it.
+      Run one, or race all three.
+    </p>
+
+    <div class="garage" id="garage">
+
+      <article class="bay" data-mode="base" aria-labelledby="bay-base-title">
+        <header class="bay-head">
+          <span class="bay-no" aria-hidden="true">BAY 1</span>
+          <h3 id="bay-base-title">Stock</h3>
+          <p class="bay-sub">SmolLM2-135M exactly as it left the factory. No examples, no tuning.</p>
+          <dl class="bay-spec">
+            <div><dt>prompt</dt><dd>≈430 tok</dd></div>
+            <div><dt>extra weights</dt><dd>none</dd></div>
+          </dl>
+        </header>
+        <button class="btn btn-run" type="button" data-run="base">Run stock</button>
+        <div class="bay-status" data-status="base"></div>
+        <div class="bay-result is-hidden" data-result="base"></div>
+      </article>
+
+      <article class="bay" data-mode="few_shot" aria-labelledby="bay-few-title">
+        <header class="bay-head">
+          <span class="bay-no" aria-hidden="true">BAY 2</span>
+          <h3 id="bay-few-title">Crib sheet</h3>
+          <p class="bay-sub">Same stock model, but the prompt smuggles in two worked examples.</p>
+          <dl class="bay-spec">
+            <div><dt>prompt</dt><dd>≈1,330 tok</dd></div>
+            <div><dt>extra weights</dt><dd>none</dd></div>
+          </dl>
+        </header>
+        <button class="btn btn-run" type="button" data-run="few_shot">Run crib sheet</button>
+        <div class="bay-status" data-status="few_shot"></div>
+        <div class="bay-result is-hidden" data-result="few_shot"></div>
+      </article>
+
+      <article class="bay bay-tuned" data-mode="tuned" aria-labelledby="bay-tuned-title">
+        <header class="bay-head">
+          <span class="bay-no" aria-hidden="true">BAY 3</span>
+          <h3 id="bay-tuned-title">Fine-tuned <span class="tune-badge" title="LoRA adapter, 4.9M trainable parameters">LoRA</span></h3>
+          <p class="bay-sub">Same model plus a 20&nbsp;MB adapter trained on 4,000 real notices.</p>
+          <dl class="bay-spec">
+            <div><dt>prompt</dt><dd>≈430 tok</dd></div>
+            <div><dt>extra weights</dt><dd>20 MB</dd></div>
+          </dl>
+        </header>
+        <button class="btn btn-run btn-run-tuned" type="button" data-run="tuned">Run fine-tuned</button>
+        <div class="bay-status" data-status="tuned"></div>
+        <div class="bay-result is-hidden" data-result="tuned"></div>
+      </article>
     </div>
 
-    <article class="card" id="card-output">
-      <div class="card-urgency" id="card-urgency"></div>
-      <dl class="card-body" id="card-body"></dl>
-    </article>
-
-    <details class="raw-details">
-      <summary>Show the original notice and the raw model output</summary>
-      <div class="raw-grid">
-        <div>
-          <h3>Original notice</h3>
-          <pre id="raw-notice" class="raw"></pre>
-        </div>
-        <div>
-          <h3>Model output</h3>
-          <pre id="raw-output" class="raw"></pre>
-        </div>
-      </div>
-    </details>
+    <div class="garage-actions">
+      <button class="btn btn-dark" id="run-all-btn" type="button">Race all three</button>
+      <span class="help">They share one CPU, so the race runs nose to tail — figure a minute total.</span>
+    </div>
   </section>
 
-  <section class="panel is-hidden" id="baseline-panel" aria-labelledby="baseline-heading">
-    <h2 id="baseline-heading">Before / after</h2>
-    <p class="help">Same model weights, same prompt. The only difference is the LoRA adapter.</p>
-    <div class="compare-grid">
-      <div class="compare-col">
-        <h3>Before <span class="tag tag-muted">base model, no adapter</span></h3>
-        <pre class="raw" id="baseline-output"></pre>
-        <ul class="mini-metrics" id="baseline-metrics"></ul>
+  <!-- ================= original letter ================= -->
+  <section class="stage is-hidden" id="source-panel" aria-labelledby="source-heading">
+    <div class="stage-marker" aria-hidden="true">PAPER TRAIL</div>
+    <h2 id="source-heading">What the letter actually said</h2>
+    <div class="letter letter-static">
+      <div class="letter-head" aria-hidden="true">
+        <span>ORIGINAL NOTICE</span>
+        <span class="letter-stamp letter-stamp-red">VERBATIM</span>
       </div>
-      <div class="compare-col">
-        <h3>After <span class="tag tag-good">fine-tuned</span></h3>
-        <pre class="raw" id="tuned-output"></pre>
-        <ul class="mini-metrics" id="tuned-metrics"></ul>
-      </div>
+      <pre id="raw-notice" class="letter-body"></pre>
     </div>
+    <p class="help">Always read the original before acting. The rewrite is a reading aid, not the record.</p>
   </section>
 
   {% if evaluation %}
-  <section class="panel" aria-labelledby="eval-heading">
-    <h2 id="eval-heading">What the fine-tune actually bought</h2>
-    <p class="help">Measured on {{ evaluation.examples }} notices from seven held-out manufacturers.</p>
-    <div class="metric-grid">
-      <div class="metric">
-        <span class="metric-label">Card format produced correctly</span>
-        <span class="metric-value">{{ '%.0f'|format((evaluation.format_tuned or 0) * 100) }}%</span>
-        <span class="metric-delta">base {{ '%.0f'|format((evaluation.format_base or 0) * 100) }}% · few-shot {{ '%.0f'|format((evaluation.format_few_shot or 0) * 100) }}%</span>
+  <!-- ================= scoreboard ================= -->
+  <section class="stage" aria-labelledby="eval-heading">
+    <div class="stage-marker" aria-hidden="true">DYNO SHEET</div>
+    <h2 id="eval-heading">Measured, not vibes</h2>
+    <p class="lede">{{ evaluation.examples }} notices from seven manufacturers the model never saw.</p>
+    <div class="dyno">
+      <div class="dyno-row">
+        <span class="dyno-label">Five-section card produced correctly</span>
+        <span class="dyno-bars">
+          <span class="dyno-bar"><i style="width: {{ (evaluation.format_base or 0) * 100 }}%"></i><b>stock {{ '%.0f'|format((evaluation.format_base or 0) * 100) }}%</b></span>
+          <span class="dyno-bar"><i style="width: {{ (evaluation.format_few_shot or 0) * 100 }}%"></i><b>crib {{ '%.0f'|format((evaluation.format_few_shot or 0) * 100) }}%</b></span>
+          <span class="dyno-bar dyno-win"><i style="width: {{ (evaluation.format_tuned or 0) * 100 }}%"></i><b>tuned {{ '%.0f'|format((evaluation.format_tuned or 0) * 100) }}%</b></span>
+        </span>
       </div>
-      <div class="metric">
-        <span class="metric-label">Reading grade level</span>
-        <span class="metric-value">{{ evaluation.grade_tuned }}</span>
-        <span class="metric-delta">original notices {{ evaluation.grade_notice }}</span>
-      </div>
-      <div class="metric">
-        <span class="metric-label">Urgency triage (macro-F1)</span>
-        <span class="metric-value">{{ '%.2f'|format(evaluation.macro_f1_tuned or 0) }}</span>
-        <span class="metric-delta">base {{ '%.2f'|format(evaluation.macro_f1_base or 0) }} · few-shot {{ '%.2f'|format(evaluation.macro_f1_few_shot or 0) }}</span>
-      </div>
-      <div class="metric">
-        <span class="metric-label">Prompt tokens per request</span>
-        <span class="metric-value">{{ evaluation.prompt_tokens_tuned|round|int }}</span>
-        <span class="metric-delta">few-shot baseline needs {{ evaluation.prompt_tokens_few_shot|round|int }}</span>
+      <div class="dyno-grid">
+        <div class="dyno-stat"><span class="dyno-stat-v">{{ evaluation.grade_tuned }}</span><span class="dyno-stat-l">reading grade, tuned<br>(letters: {{ evaluation.grade_notice }})</span></div>
+        <div class="dyno-stat"><span class="dyno-stat-v">{{ evaluation.prompt_tokens_tuned|round|int }}</span><span class="dyno-stat-l">prompt tokens<br>(crib sheet: {{ evaluation.prompt_tokens_few_shot|round|int }})</span></div>
+        <div class="dyno-stat"><span class="dyno-stat-v">0%</span><span class="dyno-stat-l">rare-warning recall, model<br>— twice; see shop rules</span></div>
+        <div class="dyno-stat"><span class="dyno-stat-v">73%</span><span class="dyno-stat-l">rare-warning recall, 15 lines<br>of rules = the text ceiling</span></div>
       </div>
     </div>
   </section>
   {% endif %}
 
-  <section class="panel notes" aria-labelledby="limits-heading">
-    <h2 id="limits-heading">Read this before you rely on it</h2>
-    <ul>
-      <li><strong>This is a reading aid, not legal or safety advice.</strong> The official notice is the authority. It is always shown alongside the rewrite.</li>
-      <li><strong>Do-not-drive and park-outside warnings come from NHTSA, not from the model.</strong> Evaluation showed the model cannot reliably infer them from notice text, so the banner above is driven by the agency's own flags.</li>
-      <li><strong>A 360M-parameter model can still get things wrong.</strong> Check the original text before making a decision, and call your dealer with the campaign number.</li>
-      <li><strong>Recall repairs are free.</strong> If a shop asks you to pay for a recall repair, that is not a recall repair.</li>
-    </ul>
+  <!-- ================= the rules ================= -->
+  <section class="stage stage-creed" aria-labelledby="creed-heading">
+    <div class="stage-marker" aria-hidden="true">SHOP RULES</div>
+    <h2 id="creed-heading">House rules, learned the hard way</h2>
+    <ol class="creed">
+      <li><strong>The model writes the prose. The alarm is never its call.</strong> We trained it twice to say "STOP DRIVING" and it wouldn't — so the red banner above comes from NHTSA's flags or from rules that read the letter, never from the model.</li>
+      <li><strong>The original letter is always one scroll away.</strong> Plain language trades precision for reach; the record stays verbatim.</li>
+      <li><strong>Recall repairs are free. Always.</strong> Every card says so, because "you owe nothing" is the fact scammers count on you not knowing.</li>
+      <li><strong>Nothing you paste is stored.</strong> No accounts, no tracking, no history.</li>
+      <li><strong>Not NHTSA.</strong> One person's course project, wearing a government dataset respectfully.</li>
+    </ol>
   </section>
 
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
+<footer class="road-footer">
+  <div class="hazard" aria-hidden="true"></div>
+  <div class="wrap footer-inner">
     <p>
-      Recall data: <a href="https://data.transportation.gov/d/6axg-epim" rel="noopener">NHTSA / U.S. DOT open data</a> (public domain).
-      Built for an AI course hackathon — not affiliated with NHTSA.
+      Data: <a href="https://data.transportation.gov/d/6axg-epim" rel="noopener">NHTSA / U.S. DOT open data</a> (public domain)
+      · Engine: <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct" rel="noopener">SmolLM2-135M</a>
+      · Adapter: <a href="https://huggingface.co/HanfuZhao781/recallclear-smollm2-135m-lora" rel="noopener">recallclear-lora</a>
     </p>
+    <p class="footer-personal">Hand-built for Duke AIPI 540 by a car person who has actually thrown a recall letter away. 🔧</p>
   </div>
 </footer>
 

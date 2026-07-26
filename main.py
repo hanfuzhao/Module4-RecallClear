@@ -25,6 +25,7 @@ from flask import Flask, jsonify, render_template, request
 
 from scripts import config
 from scripts.app_service import DemoLibrary, ExplainerService, load_evaluation_summary
+from scripts.model import RecallExplainer
 from scripts.recall_lookup import (
     CampaignNotFoundError,
     fetch_campaign,
@@ -115,10 +116,17 @@ def lookup() -> tuple:
 
 @app.route("/api/explain", methods=["POST"])
 def explain() -> tuple:
-    """Rewrite a notice into a plain-language card."""
+    """Run one of the three systems on a notice and return its card.
+
+    ``mode`` selects the system -- ``base`` (untuned), ``few_shot`` (untuned
+    plus two worked examples in the prompt), or ``tuned`` (LoRA adapter). Each
+    runs independently so the interface can drive them as separate bays. The
+    legacy shape (no ``mode``, optional ``include_baseline``) is kept for
+    older clients.
+    """
     payload = request.get_json(silent=True) or {}
     notice = (payload.get("notice") or "").strip()
-    include_baseline = bool(payload.get("include_baseline"))
+    mode = (payload.get("mode") or "").strip()
 
     if not notice:
         return jsonify({"error": "Paste a recall notice first."}), 400
@@ -126,19 +134,24 @@ def explain() -> tuple:
         return jsonify(
             {"error": f"That notice is longer than {MAX_NOTICE_CHARACTERS} characters."}
         ), 413
+    if mode and mode not in RecallExplainer.MODES:
+        return jsonify({"error": f"Unknown mode {mode!r}; use one of {RecallExplainer.MODES}."}), 400
 
     try:
-        result = {
+        common = {
             "notice_metrics": ExplainerService.notice_metrics(notice),
             # Deterministic safety layer: top-level warnings are detected from
-            # the notice text, never taken from the model's own urgency line.
+            # the notice text, never taken from any model's urgency line.
             "text_warnings": ExplainerService.text_warnings(notice),
-            "tuned": explainer_service.explain(notice),
         }
-        if include_baseline:
-            result["base"] = explainer_service.explain(
-                notice, mode=explainer_service.explainer().MODE_BASE
-            )
+        if mode:
+            result = {**common, "mode": mode, "result": explainer_service.explain(notice, mode=mode)}
+        else:  # legacy shape
+            result = {**common, "tuned": explainer_service.explain(notice)}
+            if bool(payload.get("include_baseline")):
+                result["base"] = explainer_service.explain(
+                    notice, mode=RecallExplainer.MODE_BASE
+                )
     except RuntimeError as error:  # adapter missing
         logger.error("Generation failed: %s", error)
         return jsonify({"error": str(error)}), 503
