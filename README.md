@@ -7,7 +7,7 @@ legalistic text of a U.S. vehicle recall notice into a five-part plain-language
 card. Built from a dataset of **11,591 real NHTSA recall notices** — and trained,
 deliberately, on a laptop CPU.
 
-- **Live app:** _see Deployment below_
+- **Live app:** https://recallclear-166936551184.us-central1.run.app
 - **Model:** `HanfuZhao781/recallclear-smollm2-135m-lora` on the Hugging Face Hub
 - **Data:** [NHTSA Recalls Data](https://data.transportation.gov/d/6axg-epim), U.S. DOT open data (public domain)
 
@@ -231,16 +231,28 @@ make app         # serve the web app
 
 ## Deployment
 
-The app is containerised for Hugging Face Spaces (Docker SDK):
+Live at **https://recallclear-166936551184.us-central1.run.app** on Google
+Cloud Run (4 vCPU / 2 GiB, scale-to-zero). Hugging Face Spaces was the original
+target, but new Docker Spaces now require a PRO subscription, so the app ships
+as a plain container that runs anywhere:
 
 ```bash
 docker build -t recallclear .
 docker run -p 7860:7860 recallclear
+# or
+gcloud run deploy recallclear --source . --memory 2Gi --cpu 4 --allow-unauthenticated
 ```
 
-The container installs CPU-only PyTorch, loads the base model plus the committed
-adapter, and serves gunicorn with a single worker. Live NHTSA lookup can be
-disabled with `RECALLCLEAR_LIVE_LOOKUP=0` for a fully offline demo.
+The image bakes the base model weights in at build time (`scripts/bake_model.py`)
+so serving never depends on huggingface.co being reachable — the first deploy
+failed with a 429 precisely because it did. The committed LoRA adapter rides in
+from the repo, gunicorn serves one worker with lazy model load, and live NHTSA
+lookup can be disabled with `RECALLCLEAR_LIVE_LOOKUP=0` for an offline demo.
+
+Three serving bugs were found only by deploying — a training-only import in the
+serving path, the Hub rate limit above, and int8 quantisation breaking PEFT's
+LoRA wrappers — all invisible on the Apple-silicon dev machine. The commit
+history (PR #13) documents each.
 
 ## Attribution
 
