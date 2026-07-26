@@ -1,0 +1,170 @@
+{
+  "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "adapter": "/Users/leo/Desktop/540 summer/Module4_Hackathon/models/adapter",
+  "test_examples_total": 861,
+  "held_out_brands": [
+    "SUBARU",
+    "MAZDA",
+    "TESLA",
+    "MITSUBISHI",
+    "VOLVO",
+    "PORSCHE",
+    "WINNEBAGO"
+  ],
+  "label_ceiling": {
+    "STOP DRIVING": {
+      "support": 33,
+      "notices_with_explicit_warning": 24,
+      "max_achievable_recall": 0.7273
+    },
+    "PARK OUTSIDE": {
+      "support": 5,
+      "notices_with_explicit_warning": 5,
+      "max_achievable_recall": 1.0
+    }
+  },
+  "systems": {
+    "base": {
+      "examples": 150,
+      "format_compliance": 0.0,
+      "urgency_stated": 0.0,
+      "urgency_accuracy": 0.0,
+      "urgency_macro_f1": 0.0,
+      "urgency_per_class": {
+        "STOP DRIVING": {
+          "support": 33,
+          "recall": 0.0
+        },
+        "PARK OUTSIDE": {
+          "support": 5,
+          "recall": 0.0
+        },
+        "GET IT FIXED SOON": {
+          "support": 111,
+          "recall": 0.0
+        },
+        "SCHEDULE IT": {
+          "support": 1,
+          "recall": 0.0
+        }
+      },
+      "urgency_confusion": {
+        "pairs": {
+          "GET IT FIXED SOON -> NOT STATED": 111,
+          "STOP DRIVING -> NOT STATED": 33,
+          "PARK OUTSIDE -> NOT STATED": 5,
+          "SCHEDULE IT -> NOT STATED": 1
+        },
+        "safety_downgrades": 38,
+        "high_stakes_examples": 38,
+        "safety_downgrade_rate": 1.0
+      },
+      "grade_level": 12.99,
+      "jargon_rate": 2.516,
+      "free_repair_stated": 0.0,
+      "phone_hallucination": 0.0,
+      "grounding": 0.8843,
+      "mean_output_words": 141.0,
+      "seconds_per_card": 4.38,
+      "mean_prompt_tokens": 427.1
+    },
+    "few_shot": {
+      "examples": 150,
+      "format_compliance": 0.6267,
+      "urgency_stated": 0.82,
+      "urgency_accuracy": 0.02,
+      "urgency_macro_f1": 0.0319,
+      "urgency_per_class": {
+        "STOP DRIVING": {
+          "support": 33,
+          "recall": 0.0606
+        },
+        "PARK OUTSIDE": {
+          "support": 5,
+          "recall": 0.0
+        },
+        "GET IT FIXED SOON": {
+          "support": 111,
+          "recall": 0.0
+        },
+        "SCHEDULE IT": {
+          "support": 1,
+          "recall": 1.0
+        }
+      },
+      "urgency_confusion": {
+        "pairs": {
+          "GET IT FIXED SOON -> SCHEDULE IT": 84,
+          "STOP DRIVING -> SCHEDULE IT": 30,
+          "GET IT FIXED SOON -> NOT STATED": 26,
+          "PARK OUTSIDE -> SCHEDULE IT": 5,
+          "STOP DRIVING -> STOP DRIVING": 2,
+          "GET IT FIXED SOON -> STOP DRIVING": 1,
+          "SCHEDULE IT -> SCHEDULE IT": 1,
+          "STOP DRIVING -> NOT STATED": 1
+        },
+        "safety_downgrades": 36,
+        "high_stakes_examples": 38,
+        "safety_downgrade_rate": 0.9474
+      },
+      "grade_level": 7.95,
+      "jargon_rate": 2.337,
+      "free_repair_stated": 0.66,
+      "phone_hallucination": 0.02,
+      "grounding": 0.5879,
+      "mean_output_words": 110.1,
+      "seconds_per_card": 7.87,
+      "mean_prompt_tokens": 1334.1
+    },
+    "tuned": {
+      "examples": 150,
+      "format_compliance": 1.0,
+      "urgency_stated": 1.0,
+      "urgency_accuracy": 0.74,
+      "urgency_macro_f1": 0.2126,
+      "urgency_per_class": {
+        "STOP DRIVING": {
+          "support": 33,
+          "recall": 0.0
+        },
+        "PARK OUTSIDE": {
+          "support": 5,
+          "recall": 0.0
+        },
+        "GET IT FIXED SOON": {
+          "support": 111,
+          "recall": 1.0
+        },
+        "SCHEDULE IT": {
+          "support": 1,
+          "recall": 0.0
+        }
+      },
+      "urgency_confusion": {
+        "pairs": {
+          "GET IT FIXED SOON -> GET IT FIXED SOON": 111,
+          "STOP DRIVING -> GET IT FIXED SOON": 33,
+          "PARK OUTSIDE -> GET IT FIXED SOON": 5,
+          "SCHEDULE IT -> GET IT FIXED SOON": 1
+        },
+        "safety_downgrades": 38,
+        "high_stakes_examples": 38,
+        "safety_downgrade_rate": 1.0
+      },
+      "grade_level": 7.33,
+      "jargon_rate": 0.803,
+      "free_repair_stated": 1.0,
+      "phone_hallucination": 0.0067,
+      "grounding": 0.5366,
+      "mean_output_words": 117.1,
+      "seconds_per_card": 3.19,
+      "mean_prompt_tokens": 427.1
+    }
+  },
+  "reference_cards": {
+    "grade_level": 7.22,
+    "jargon_rate": 0.236,
+    "notice_grade_level": 12.73,
+    "notice_jargon_rate": 2.912
+  }
+}
