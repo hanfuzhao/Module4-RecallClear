@@ -69,21 +69,34 @@ naming that baseline out loud is what makes the comparison credible. The
 fine-tune's argument is that it does the same job at roughly a fifth of the
 prompt tokens, which on a CPU host is the difference between usable and not.
 
-## 2:45 — 4:00 · Risks, ethics, and what evaluation cannot see
+## 2:45 — 4:00 · Risks, ethics, and the best table in the project
 
-This is the part most projects hand-wave. Lead with the measurement that changed
-the product.
+This is the part most projects hand-wave. Lead with the finding that changed
+the product — it has a beginning, a middle, and an end.
 
-**The finding.** NHTSA's do-not-drive designation is database metadata, not
-words in the notice. Measured on the training corpus, only **60%** of
-do-not-drive notices contain any explicit warning language, against a **1.4%**
-base rate elsewhere. So a text-only model provably cannot recover that label in
-about 40% of cases.
+**Act one: the model fails.** The urgency line has four levels, and the two
+that matter — STOP DRIVING, PARK OUTSIDE — are 3% of the data. First fine-tune:
+**0% recall** on them.
 
-**What was done about it.** The app takes the do-not-drive and park-outside
-banners from NHTSA's own flags, never from the model. The model writes the
-prose; the agency sets the alarm. When someone pastes raw text, where no flag
-exists, the interface says so instead of showing a reassuring blank.
+**Act two: the obvious fix fails too.** Oversampled the rare classes to 16% of
+the training mix and retrained. Still **0% — including on notices the model
+trained on**. Why: the urgency level is ~3 tokens out of a ~130-token card, so
+token-averaged loss is minimised almost perfectly by never saying STOP DRIVING.
+Class imbalance was never the real problem; token imbalance was.
+
+**Act three: stop asking the model.** Say the table out loud, it is the whole
+pitch:
+
+| who makes the do-not-drive call | recall |
+|---|---|
+| the fine-tuned model (both versions) | 0% |
+| 15 lines of regex on the notice text | 73% — which is 100% of what the text contains |
+| NHTSA's own structured flags | 100% |
+
+The app ships all three layers: the model writes the prose (where it went
+0% → 100% on format), the regex reads the warnings on pasted text, and the
+lookup path uses the agency's flags. **Generation is the model's job; the
+alarm never is.**
 
 Then the shorter points:
 
@@ -129,8 +142,9 @@ not allowed to make.
 
 ## Notes for the recording
 
-- Have a `STOP DRIVING` example ready — it is the most vivid demonstration and
-  the best lead-in to the ethics section.
+- Have a `STOP DRIVING` example ready — paste it and let the audience watch the
+  red banner come from the rule while the model's own card says merely "get it
+  fixed soon". That contrast IS the ethics section, demonstrated live.
 - Show the app on a phone-width window for a moment; recall letters get read on
   phones.
 - If a live call fails, fall back to `data/outputs/before_after.jsonl`, which has
