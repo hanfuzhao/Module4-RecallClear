@@ -86,6 +86,12 @@ RANDOM_SEED = 20260725
 # 1.6 s/sample and format learning saturates well before the full corpus.
 MAX_TRAIN_EXAMPLES: int | None = 4000
 
+# The urgency labels are 97/3 imbalanced, and the first training run proved the
+# cost: the model simply never produced the rare, high-stakes levels (0% recall
+# on STOP DRIVING against a 73% textual-evidence ceiling). Each rare-class
+# example is therefore repeated this many times in the training subset.
+RARE_CLASS_OVERSAMPLE_FACTOR = 8
+
 
 # --------------------------------------------------------------------------- #
 # Model + training

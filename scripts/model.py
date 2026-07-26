@@ -21,7 +21,6 @@ import json
 from pathlib import Path
 
 import torch
-from datasets import Dataset
 from peft import LoraConfig, PeftModel, get_peft_model
 from transformers import (
     AutoModelForCausalLM,
@@ -86,13 +85,19 @@ def build_torch_dataset(
     tokenizer: AutoTokenizer,
     max_length: int = config.MAX_SEQUENCE_LENGTH,
     drop_overlong: bool = True,
-) -> Dataset:
+):
     """Convert JSONL rows into a tokenised ``datasets.Dataset``.
 
     Examples that do not fit in ``max_length`` are dropped rather than cut off.
     Truncating would remove the tail of the target card, teaching the model to
     stop mid-sentence; dropping a few long notices costs less than that.
+
+    ``datasets`` is imported here rather than at module level: it is a
+    training-time dependency, and the deployed app imports this module only for
+    ``RecallExplainer``.
     """
+    from datasets import Dataset
+
     dataset = Dataset.from_list([{"messages": row["messages"]} for row in rows])
     encoded = dataset.map(
         lambda example: encode_example(example, tokenizer, max_length),
@@ -160,6 +165,27 @@ def build_lora_model(model_id: str = config.BASE_MODEL_ID, device: str | None = 
     return model.to(device)
 
 
+def oversample_rare_urgency(
+    rows: list[dict], factor: int = None, seed: int = None
+) -> list[dict]:
+    """Repeat rare-urgency examples so the model actually sees them.
+
+    With a 97/3 class split, a uniform 4k subset contains ~50 do-not-drive
+    examples -- too few against 3,900 majority-class cards, and the first
+    training run produced 0% recall on exactly the labels with a safety
+    consequence. Repetition is the bluntest possible rebalancing, but it needs
+    no new data and directly raises the gradient share of the rare classes.
+    """
+    import random
+
+    factor = factor if factor is not None else config.RARE_CLASS_OVERSAMPLE_FACTOR
+    seed = seed if seed is not None else config.RANDOM_SEED
+    rare = [row for row in rows if row.get("park_it") or row.get("park_outside")]
+    combined = rows + rare * (factor - 1)
+    random.Random(seed).shuffle(combined)
+    return combined
+
+
 def train_lora(
     train_rows: list[dict],
     validation_rows: list[dict],
@@ -175,6 +201,9 @@ def train_lora(
         max_examples = config.MAX_TRAIN_EXAMPLES
     if max_examples:
         train_rows = train_rows[:max_examples]
+    train_rows = oversample_rare_urgency(train_rows)
+    rare_count = sum(1 for row in train_rows if row.get("park_it") or row.get("park_outside"))
+    print(f"  after oversampling: {len(train_rows)} rows, {rare_count} rare-urgency")
     print(f"Training on {len(train_rows)} examples, validating on {len(validation_rows)} (device={device})")
 
     tokenizer = load_tokenizer()
@@ -288,7 +317,13 @@ class RecallExplainer:
             model = PeftModel.from_pretrained(model, str(adapter_path))
         self.model = model.to(self.device).eval()
         self.is_quantised = False
-        if self.device == "cpu" and quantise:
+        if self.device == "cpu" and quantise and not self.has_adapter:
+            # Quantisation is skipped when an adapter is loaded: quantize_dynamic
+            # swaps every nn.Linear, including the ones inside LoRA wrappers, and
+            # PEFT then fails at generate time ("'function' object has no
+            # attribute 'dtype'" -- a quantised Linear exposes .weight as a
+            # method). Observed in production on the first deployment. The
+            # adapterless path (no fine-tune available) still benefits.
             self.is_quantised = self._quantise_for_cpu()
 
     def _quantise_for_cpu(self) -> bool:

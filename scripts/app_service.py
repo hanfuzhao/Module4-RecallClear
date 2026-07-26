@@ -61,6 +61,13 @@ class ExplainerService:
         if self._explainer is None:
             with self._load_lock:
                 if self._explainer is None:
+                    import os
+
+                    import torch
+
+                    # Use every core the host offers; the serving default can
+                    # otherwise be capped below the container's CPU allocation.
+                    torch.set_num_threads(max(1, os.cpu_count() or 1))
                     self._explainer = RecallExplainer(
                         adapter_path=self.adapter_source, base_model_id=self.base_model_id
                     )
