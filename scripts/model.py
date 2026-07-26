@@ -169,6 +169,10 @@ def train_lora(
 ) -> Path:
     """Fine-tune the LoRA adapter and save it to ``output_dir``."""
     device = config.resolve_device()
+    if device == "cpu":
+        torch.set_num_threads(8)  # measured fastest on the M1 Pro dev machine
+    if max_examples is None:
+        max_examples = config.MAX_TRAIN_EXAMPLES
     if max_examples:
         train_rows = train_rows[:max_examples]
     print(f"Training on {len(train_rows)} examples, validating on {len(validation_rows)} (device={device})")
