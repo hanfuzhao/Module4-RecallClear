@@ -279,6 +279,31 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(payload["official_warnings"]["do_not_drive"])
 
+    def test_explain_accepts_an_explicit_mode(self) -> None:
+        stub = {"raw": WELL_FORMED_CARD, "sections": {}, "well_formed": True, "seconds": 0.1}
+        with patch.object(self.main.explainer_service, "explain", return_value=stub) as mocked:
+            response = self.client.post(
+                "/api/explain", json={"notice": "A recall notice.", "mode": "few_shot"}
+            )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["mode"], "few_shot")
+        self.assertEqual(payload["result"]["raw"], WELL_FORMED_CARD)
+        mocked.assert_called_once_with("A recall notice.", mode="few_shot")
+
+    def test_explain_rejects_an_unknown_mode(self) -> None:
+        response = self.client.post(
+            "/api/explain", json={"notice": "A recall notice.", "mode": "gpt7"}
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_explain_reports_text_warnings(self) -> None:
+        stub = {"raw": WELL_FORMED_CARD, "sections": {}, "well_formed": True, "seconds": 0.1}
+        notice = "Owners are advised not to drive these vehicles until repaired."
+        with patch.object(self.main.explainer_service, "explain", return_value=stub):
+            response = self.client.post("/api/explain", json={"notice": notice, "mode": "tuned"})
+        self.assertTrue(response.get_json()["text_warnings"]["do_not_drive"])
+
     def test_unknown_api_path_returns_json(self) -> None:
         response = self.client.get("/api/does-not-exist")
         self.assertEqual(response.status_code, 404)
