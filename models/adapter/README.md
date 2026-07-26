@@ -1,207 +1,54 @@
 ---
 base_model: HuggingFaceTB/SmolLM2-135M-Instruct
 library_name: peft
-pipeline_tag: text-generation
+license: apache-2.0
+language:
+- en
 tags:
-- base_model:adapter:HuggingFaceTB/SmolLM2-135M-Instruct
 - lora
-- transformers
+- peft
+- text2text-generation
+- plain-language
+- public-safety
 ---
 
-# Model Card for Model ID
+# RecallClear — plain-language vehicle recall explainer
 
-<!-- Provide a quick summary of what the model is/does. -->
+A LoRA adapter for `HuggingFaceTB/SmolLM2-135M-Instruct` that rewrites official U.S. vehicle safety
+recall notices into a five-part summary an owner can act on:
 
+```
+WHAT'S WRONG / WHAT COULD HAPPEN / HOW URGENT / WHAT TO DO / WHAT IT COSTS
+```
 
+## Training data
 
-## Model Details
+4,651 recall notices published by NHTSA between 2013 and 2025
+([Recalls Data](https://data.transportation.gov/d/6axg-epim), public domain).
+Reference cards were derived from the notices' own structured fields using a
+curated plain-language lexicon and a four-level urgency ladder anchored on
+NHTSA's official `do_not_drive` and `fire_risk_when_parked` flags.
 
-### Model Description
+Seven manufacturers (Subaru, Mazda, Tesla, Mitsubishi, Volvo, Porsche, Winnebago) were held out entirely, so evaluation measures
+generalisation to unseen brands.
 
-<!-- Provide a longer summary of what this model is. -->
+## Intended use and limits
 
+This is a **reading aid**, not safety or legal advice. The official notice
+remains authoritative and should always be shown alongside the rewrite.
+Do-not-drive and park-outside warnings should be taken from NHTSA's flags, not
+from this model: evaluation found the notice text alone often lacks the
+evidence needed to recover them.
 
+## Usage
 
-- **Developed by:** [More Information Needed]
-- **Funded by [optional]:** [More Information Needed]
-- **Shared by [optional]:** [More Information Needed]
-- **Model type:** [More Information Needed]
-- **Language(s) (NLP):** [More Information Needed]
-- **License:** [More Information Needed]
-- **Finetuned from model [optional]:** [More Information Needed]
+```python
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-### Model Sources [optional]
+base = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+model = PeftModel.from_pretrained(base, "HanfuZhao781/recallclear-smollm2-135m-lora")
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M-Instruct")
+```
 
-<!-- Provide the basic links for the model. -->
-
-- **Repository:** [More Information Needed]
-- **Paper [optional]:** [More Information Needed]
-- **Demo [optional]:** [More Information Needed]
-
-## Uses
-
-<!-- Address questions around how the model is intended to be used, including the foreseeable users of the model and those affected by the model. -->
-
-### Direct Use
-
-<!-- This section is for the model use without fine-tuning or plugging into a larger ecosystem/app. -->
-
-[More Information Needed]
-
-### Downstream Use [optional]
-
-<!-- This section is for the model use when fine-tuned for a task, or when plugged into a larger ecosystem/app -->
-
-[More Information Needed]
-
-### Out-of-Scope Use
-
-<!-- This section addresses misuse, malicious use, and uses that the model will not work well for. -->
-
-[More Information Needed]
-
-## Bias, Risks, and Limitations
-
-<!-- This section is meant to convey both technical and sociotechnical limitations. -->
-
-[More Information Needed]
-
-### Recommendations
-
-<!-- This section is meant to convey recommendations with respect to the bias, risk, and technical limitations. -->
-
-Users (both direct and downstream) should be made aware of the risks, biases and limitations of the model. More information needed for further recommendations.
-
-## How to Get Started with the Model
-
-Use the code below to get started with the model.
-
-[More Information Needed]
-
-## Training Details
-
-### Training Data
-
-<!-- This should link to a Dataset Card, perhaps with a short stub of information on what the training data is all about as well as documentation related to data pre-processing or additional filtering. -->
-
-[More Information Needed]
-
-### Training Procedure
-
-<!-- This relates heavily to the Technical Specifications. Content here should link to that section when it is relevant to the training procedure. -->
-
-#### Preprocessing [optional]
-
-[More Information Needed]
-
-
-#### Training Hyperparameters
-
-- **Training regime:** [More Information Needed] <!--fp32, fp16 mixed precision, bf16 mixed precision, bf16 non-mixed precision, fp16 non-mixed precision, fp8 mixed precision -->
-
-#### Speeds, Sizes, Times [optional]
-
-<!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
-
-[More Information Needed]
-
-## Evaluation
-
-<!-- This section describes the evaluation protocols and provides the results. -->
-
-### Testing Data, Factors & Metrics
-
-#### Testing Data
-
-<!-- This should link to a Dataset Card if possible. -->
-
-[More Information Needed]
-
-#### Factors
-
-<!-- These are the things the evaluation is disaggregating by, e.g., subpopulations or domains. -->
-
-[More Information Needed]
-
-#### Metrics
-
-<!-- These are the evaluation metrics being used, ideally with a description of why. -->
-
-[More Information Needed]
-
-### Results
-
-[More Information Needed]
-
-#### Summary
-
-
-
-## Model Examination [optional]
-
-<!-- Relevant interpretability work for the model goes here -->
-
-[More Information Needed]
-
-## Environmental Impact
-
-<!-- Total emissions (in grams of CO2eq) and additional considerations, such as electricity usage, go here. Edit the suggested text below accordingly -->
-
-Carbon emissions can be estimated using the [Machine Learning Impact calculator](https://mlco2.github.io/impact#compute) presented in [Lacoste et al. (2019)](https://arxiv.org/abs/1910.09700).
-
-- **Hardware Type:** [More Information Needed]
-- **Hours used:** [More Information Needed]
-- **Cloud Provider:** [More Information Needed]
-- **Compute Region:** [More Information Needed]
-- **Carbon Emitted:** [More Information Needed]
-
-## Technical Specifications [optional]
-
-### Model Architecture and Objective
-
-[More Information Needed]
-
-### Compute Infrastructure
-
-[More Information Needed]
-
-#### Hardware
-
-[More Information Needed]
-
-#### Software
-
-[More Information Needed]
-
-## Citation [optional]
-
-<!-- If there is a paper or blog post introducing the model, the APA and Bibtex information for that should go in this section. -->
-
-**BibTeX:**
-
-[More Information Needed]
-
-**APA:**
-
-[More Information Needed]
-
-## Glossary [optional]
-
-<!-- If relevant, include terms and calculations in this section that can help readers understand the model or model card. -->
-
-[More Information Needed]
-
-## More Information [optional]
-
-[More Information Needed]
-
-## Model Card Authors [optional]
-
-[More Information Needed]
-
-## Model Card Contact
-
-[More Information Needed]
-### Framework versions
-
-- PEFT 0.18.1
+Full pipeline, evaluation, and web app: https://github.com/hanfuzhao/Module4-RecallClear

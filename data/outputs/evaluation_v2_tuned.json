@@ -1,0 +1,78 @@
+{
+  "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "adapter": "/Users/leo/Desktop/540 summer/Module4_Hackathon/models/adapter",
+  "test_examples_total": 861,
+  "held_out_brands": [
+    "SUBARU",
+    "MAZDA",
+    "TESLA",
+    "MITSUBISHI",
+    "VOLVO",
+    "PORSCHE",
+    "WINNEBAGO"
+  ],
+  "label_ceiling": {
+    "STOP DRIVING": {
+      "support": 33,
+      "notices_with_explicit_warning": 24,
+      "max_achievable_recall": 0.7273
+    },
+    "PARK OUTSIDE": {
+      "support": 5,
+      "notices_with_explicit_warning": 5,
+      "max_achievable_recall": 1.0
+    }
+  },
+  "systems": {
+    "tuned": {
+      "examples": 150,
+      "format_compliance": 1.0,
+      "urgency_stated": 1.0,
+      "urgency_accuracy": 0.74,
+      "urgency_macro_f1": 0.2126,
+      "urgency_per_class": {
+        "STOP DRIVING": {
+          "support": 33,
+          "recall": 0.0
+        },
+        "PARK OUTSIDE": {
+          "support": 5,
+          "recall": 0.0
+        },
+        "GET IT FIXED SOON": {
+          "support": 111,
+          "recall": 1.0
+        },
+        "SCHEDULE IT": {
+          "support": 1,
+          "recall": 0.0
+        }
+      },
+      "urgency_confusion": {
+        "pairs": {
+          "GET IT FIXED SOON -> GET IT FIXED SOON": 111,
+          "STOP DRIVING -> GET IT FIXED SOON": 33,
+          "PARK OUTSIDE -> GET IT FIXED SOON": 5,
+          "SCHEDULE IT -> GET IT FIXED SOON": 1
+        },
+        "safety_downgrades": 38,
+        "high_stakes_examples": 38,
+        "safety_downgrade_rate": 1.0
+      },
+      "grade_level": 7.3,
+      "jargon_rate": 0.731,
+      "free_repair_stated": 1.0,
+      "phone_hallucination": 0.0067,
+      "grounding": 0.5355,
+      "mean_output_words": 116.7,
+      "seconds_per_card": 3.13,
+      "mean_prompt_tokens": 427.1
+    }
+  },
+  "reference_cards": {
+    "grade_level": 7.22,
+    "jargon_rate": 0.236,
+    "notice_grade_level": 12.73,
+    "notice_jargon_rate": 2.912
+  }
+}
