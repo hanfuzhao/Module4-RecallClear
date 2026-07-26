@@ -151,13 +151,13 @@
         "high_stakes_examples": 38,
         "safety_downgrade_rate": 1.0
       },
-      "grade_level": 7.33,
-      "jargon_rate": 0.803,
+      "grade_level": 7.3,
+      "jargon_rate": 0.731,
       "free_repair_stated": 1.0,
       "phone_hallucination": 0.0067,
-      "grounding": 0.5366,
-      "mean_output_words": 117.1,
-      "seconds_per_card": 3.19,
+      "grounding": 0.5355,
+      "mean_output_words": 116.7,
+      "seconds_per_card": 3.13,
       "mean_prompt_tokens": 427.1
     }
   },
@@ -166,5 +166,6 @@
     "jargon_rate": 0.236,
     "notice_grade_level": 12.73,
     "notice_jargon_rate": 2.912
-  }
+  },
+  "adapter_note": "base and few_shot were measured with adapter v1 loaded but disabled (identical to the untuned model); tuned reflects adapter v2, trained with rare-class oversampling."
 }
