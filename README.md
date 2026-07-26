@@ -127,13 +127,30 @@ Three systems are compared, all using the same weights:
 
 ## Honest limitations
 
-**The rare urgency classes have a hard ceiling.** NHTSA's `do_not_drive` flag is
-database metadata, not necessarily words in the notice. Measured on the training
-corpus, only **60%** of do-not-drive notices contain any explicit warning
-language (against a 1.4% base rate elsewhere); park-outside notices fare better
-at 92%. No text-only model can recover the other 40%. The evaluation reports
-this ceiling alongside the scores, and **the deployed app takes the do-not-drive
-and park-outside banners from NHTSA's flags, never from the model.**
+**The model cannot make the do-not-drive call, and the app does not let it.**
+This was established the hard way, twice. NHTSA's `do_not_drive` flag is
+database metadata; on the held-out sample only 24 of 33 flagged notices (73%)
+say it in words, so text sets a hard ceiling. The v1 model scored **0% recall**
+against that ceiling. v2 oversampled the rare classes to 16% of the training
+mix and still scored **0% — including on notices it trained on**. The mechanism
+is banal: the urgency level is ~3 tokens of a ~130-token target, so
+token-averaged cross-entropy is minimised almost perfectly by a model that
+never says `STOP DRIVING`. (The modelling fix would be re-weighting the loss on
+the urgency span — future work; the prompt-masking machinery already supports
+it.)
+
+So the alarm is not the model's job. A pair of anchored regexes detects the
+warning wording directly and scores **73% recall — the entire textual
+ceiling — with 3 false positives in 828**, and the lookup path uses NHTSA's
+own flags, which are the only complete source:
+
+| who makes the do-not-drive call | recall on held-out gold |
+|---|---|
+| fine-tuned model (either version) | 0% |
+| 15 lines of anchored regex | 73% = everything text contains |
+| NHTSA's structured flags (lookup path) | 100% |
+
+Generation is the model's job; the alarm never is.
 
 **The label distribution is extremely skewed.** 97% of notices land in
 `GET IT FIXED SOON`, because nearly every safety recall carries crash, fire, or
