@@ -102,8 +102,17 @@ Metal 按张量形状缓存显存、16 GB 统一内存被逼进 swap——细节
 >
 > And you don't have to trust me — the app has **three bays**, one per
 > system. Run the race yourself.
+>
+> Here it is on a real one — a **Porsche 918**, from the glovebox. Stock:
+> no card. Fine-tuned: all five sections. Same engine, twenty megabytes apart.
 
-（可选 10 秒实况：切到应用点 "Race all three"，画面给足、音轨照念，不解说。）
+**Demo 操作（本页切到浏览器）：**
+
+1. **录制开始前**就打开应用，点 glovebox 里的 **Porsche Cars North America**
+   （14V816000，918 超跑，悬挂下摆臂断裂），点 **Race all three** 跑完——
+   录到本页时结果已经在屏幕上，不用观众等 20 秒生成。
+2. 镜头给三个车位：BAY 1 无卡片 ✗ → BAY 3 五段完整 ✓，扫一眼即可。
+3. **先不要滚动到顶部的红色横幅**——那是第 7 页的弹药，别提前剧透。
 
 ---
 
@@ -126,7 +135,9 @@ Metal 按张量形状缓存显存、16 GB 统一内存被逼进 swap——细节
 >
 > Class imbalance was not the problem. **Token imbalance was.**
 
-（**"Still zero." 之后停两拍——全场最重的一句。** 最后一句一字一顿。）
+（**"Still zero." 之后停两拍——全场最重的一句。** 最后一句一字一顿。
+顺带：你刚才 demo 的 Porsche 918 就是金标签 STOP DRIVING 的例子——屏幕上
+模型的卡片写的却是 GET IT FIXED SOON。下一页立刻兑现这个伏笔。）
 
 ---
 
@@ -148,6 +159,18 @@ Metal 按张量形状缓存显存、16 GB 统一内存被逼进 swap——细节
 > it went zero to a hundred. The rules and the flags own the alarm.
 >
 > Our shop rule: **generation is the model's job. The alarm never is.**
+>
+> And you already watched it work. That Porsche 918 is a real
+> do-not-drive recall. The model's card said "get it fixed soon" — wrong.
+> But look above it: the **red banner** — "do not drive this vehicle" —
+> that came from the rule, reading the letter. The system caught what the
+> model missed.
+
+**Demo 操作（本页第二次切回浏览器）：**
+
+滚动到页面顶部，让红色 do-not-drive 横幅和下方模型卡片的黄色
+"GET IT FIXED SOON" 同框——**一个画面就是整个第 6+7 页的论证**。停在这里
+念完本页最后两段。
 
 ---
 
@@ -180,5 +203,9 @@ Metal 按张量形状缓存显存、16 GB 统一内存被逼进 swap——细节
 
 - 全稿 ~610 词。感觉快了就在句号处多停，**不要删句子**。
 - 幻灯片外的数字一个都不加；数字全部出自 `data/outputs/evaluation.json`。
-- 实况演示若翻车，退路是 `data/outputs/before_after.jsonl`（150 条对比全部预生成）。
+- Demo 全程只用一个例子：glovebox 的 **Porsche Cars North America / 14V816000**。
+  它一石三鸟——Slide 5 秀格式对比，Slide 6 是它的伏笔，Slide 7 红横幅收尾。
+- 录制前 5 分钟先预热：打开应用 → 点 Porsche → Race all three → 保持该标签页不动。
+- 实况若翻车，退路是 `data/outputs/before_after.jsonl`（150 条对比全部预生成，
+  14V816000 也在里面）。
 - 手机竖屏给应用一个镜头——召回信本来就是在手机上被读（或被删）的。
