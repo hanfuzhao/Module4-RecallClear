@@ -1,7 +1,7 @@
 # RecallClear — 5-minute pitch script
 
-Matched one-to-one with `slides.html` (open it in a browser, press **F** for
-fullscreen, **→** to advance). ~610 words at a slow, conversational pace
+Matched one-to-one with the deck — `slides.pptx` (PowerPoint/Keynote) and
+`slides.html` (browser: **F** fullscreen, **→** advance) are the same 8 slides. ~610 words at a slow, conversational pace
 lands right at 5:00. Numbers in the script match the slides exactly — never
 say a number the slide doesn't show.
 
