@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RecallClear — pitch deck</title>
+<style>
+  /* Self-contained deck. Open in a browser, press F for fullscreen,
+     → / ← / space to move. Same visual language as the app. */
+  :root {
+    --asphalt: #1b1d21; --paint: #f7b500; --paper: #fbf7ec; --paper-edge: #e2d9c2;
+    --ink: #1d1f23; --soft: #9aa0a8;
+    --red: #d64036; --orange: #e07000; --green: #2e9e63; --blue: #6ea8ff;
+    --mono: "Courier New", ui-monospace, Menlo, monospace;
+    --cond: "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --sans: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: #0e0f12; color: #edece7; font-family: var(--sans); overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; justify-content: center;
+    padding: 6vh 9vw; background: var(--asphalt);
+  }
+  .slide.is-active { display: flex; }
+
+  .hazard { position: absolute; left: 0; right: 0; height: 12px;
+    background: repeating-linear-gradient(-45deg, #111 0 16px, var(--paint) 16px 32px); }
+  .hazard-top { top: 0; } .hazard-bottom { bottom: 0; }
+
+  .kicker { font-family: var(--cond); font-weight: 800; letter-spacing: 3px;
+    font-size: clamp(12px, 1.4vw, 16px); color: var(--paint); text-transform: uppercase; margin: 0 0 1.2vh; }
+  h1 { font-family: var(--cond); font-weight: 800; text-transform: uppercase;
+    font-size: clamp(34px, 5.4vw, 74px); line-height: 1.04; margin: 0 0 3vh; letter-spacing: .5px; }
+  h1 .yellow { color: var(--paint); }
+  .sub { font-size: clamp(16px, 1.9vw, 24px); color: #c9cdd3; max-width: 62ch; margin: 0; line-height: 1.5; }
+
+  .plate { display: inline-block; font-family: var(--cond); font-weight: 800;
+    font-size: clamp(18px, 2.2vw, 28px); letter-spacing: 3px;
+    background: var(--paint); color: #15150f; border: 3px solid #15150f; border-radius: 10px;
+    padding: .35em .7em; transform: rotate(-2deg); margin-bottom: 3.5vh;
+    box-shadow: inset 0 3px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(0,0,0,.25), 0 4px 14px rgba(0,0,0,.6); }
+
+  .letter { background: var(--paper); color: #262319; border-radius: 3px;
+    padding: 3.2vh 3vw; font-family: var(--mono); font-size: clamp(15px, 1.9vw, 24px);
+    line-height: 1.7; max-width: 72ch; box-shadow: 4px 6px 0 rgba(0,0,0,.35); position: relative; }
+  .letter .stamp { position: absolute; top: 12px; right: 16px; font-family: var(--cond);
+    font-weight: 800; font-size: .55em; letter-spacing: 2px; color: var(--red);
+    border: 2px solid var(--red); border-radius: 3px; padding: 2px 8px; transform: rotate(4deg); opacity: .85; }
+
+  .grade { margin-top: 3vh; font-size: clamp(15px, 1.8vw, 22px); color: #c9cdd3; }
+  .grade b { color: var(--paint); font-family: var(--mono); font-size: 1.25em; }
+
+  .cardlines { font-family: var(--mono); font-size: clamp(16px, 2.2vw, 28px); line-height: 1.9; }
+  .cardlines b { color: var(--paint); }
+
+  table { border-collapse: collapse; font-size: clamp(15px, 1.9vw, 24px); margin-top: 1vh; }
+  th, td { padding: .5em .9em; text-align: left; border-bottom: 1px solid #34373d; }
+  th { font-family: var(--cond); text-transform: uppercase; letter-spacing: 1.5px;
+       font-size: .8em; color: var(--soft); font-weight: 700; }
+  td.num { font-family: var(--mono); }
+  .win { color: var(--paint); font-weight: 700; }
+  .bad { color: var(--red); font-weight: 700; }
+  .good { color: var(--green); font-weight: 700; }
+
+  .bullets { margin: 0; padding-left: 1.1em; font-size: clamp(16px, 2vw, 26px); line-height: 1.75; max-width: 66ch; }
+  .bullets li { margin-bottom: 1.2vh; }
+  .bullets b { color: var(--paint); }
+
+  .bigline { font-family: var(--cond); font-weight: 800; text-transform: uppercase;
+    font-size: clamp(26px, 3.6vw, 48px); line-height: 1.15; margin: 3vh 0 0; }
+  .bigline .yellow { color: var(--paint); }
+
+  .foot { position: absolute; bottom: 3.2vh; left: 9vw; right: 9vw;
+    display: flex; justify-content: space-between; font-family: var(--mono);
+    font-size: clamp(11px, 1.1vw, 14px); color: #6f747c; }
+
+  .innovation { display: inline-block; font-family: var(--cond); font-weight: 800;
+    font-size: clamp(11px, 1.2vw, 14px); letter-spacing: 2px; text-transform: uppercase;
+    background: var(--red); color: #fff; border-radius: 3px; padding: 3px 10px; margin-left: 12px; vertical-align: middle; }
+
+  .cols { display: flex; gap: 4vw; align-items: flex-start; }
+  .cols > div { flex: 1; }
+
+  .counter { position: fixed; right: 18px; bottom: 14px; font-family: var(--mono);
+    font-size: 13px; color: #6f747c; z-index: 5; }
+</style>
+</head>
+<body>
+
+<!-- ============ 1 · HOOK ============ -->
+<section class="slide is-active">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">A real letter, mailed to real people</p>
+  <div class="letter">
+    <span class="stamp">SAFETY RECALL</span>
+    "Underbody heat and noise insulators may loosen and contact the aluminum
+    driveshaft, which could damage the driveshaft and cause it to fracture…"
+  </div>
+  <p class="grade">Measured across 11,591 of these letters: average reading level <b>grade 12.7</b> — college.</p>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>RecallClear</span><span>Duke AIPI 540 · Module 4</span></div>
+</section>
+
+<!-- ============ 2 · PROBLEM ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">The problem</p>
+  <h1>1 in 4 cars has an<br>open safety recall</h1>
+  <ul class="bullets">
+    <li>The repair is <b>always free</b> — federal law.</li>
+    <li>Owners still don't get it fixed.</li>
+    <li>The letter never answers: <b>how bad? what do I do? what does it cost?</b></li>
+  </ul>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>RecallClear</span><span>the letter is the interface problem</span></div>
+</section>
+
+<!-- ============ 3 · WHAT WE BUILT ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <span class="plate">RECAL·CLR</span>
+  <h1>Every letter → five plain lines</h1>
+  <p class="cardlines">
+    <b>WHAT'S WRONG</b> · one sentence<br>
+    <b>WHAT COULD HAPPEN</b> · one sentence<br>
+    <b>HOW URGENT</b> · a road-sign answer<br>
+    <b>WHAT TO DO</b> · the next step + phone number<br>
+    <b>WHAT IT COSTS</b> · nothing. always.
+  </p>
+  <p class="sub" style="margin-top:2.5vh">Live web app — paste the letter, or just the recall number.</p>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>recallclear-166936551184.us-central1.run.app</span><span>live now</span></div>
+</section>
+
+<!-- ============ 4 · HOW ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">How <span class="innovation">Innovation 1 · self-supervised from public data</span></p>
+  <h1>LoRA on a 135M model,<br>trained on a laptop CPU</h1>
+  <div class="cols">
+    <ul class="bullets">
+      <li><b>11,591 real notices</b> — U.S. DOT open data</li>
+      <li>Zero hand-labeling: targets built by <b>auditable rules</b> from NHTSA's own structured fields + official safety flags</li>
+      <li>LoRA = <b>3.5%</b> of weights → a <b>20 MB</b> adapter</li>
+    </ul>
+    <table>
+      <tr><th>measured</th><th></th></tr>
+      <tr><td>training time</td><td class="num">25 min (CPU)</td></tr>
+      <tr><td>CPU vs GPU here</td><td class="num win">CPU 4× faster</td></tr>
+      <tr><td>card on CPU</td><td class="num">~4 s</td></tr>
+    </table>
+  </div>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>SmolLM2-135M-Instruct · LoRA r16 · 4.9M trainable params</span><span>everything benchmarked, nothing assumed</span></div>
+</section>
+
+<!-- ============ 5 · BEFORE / AFTER ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">Before / after — 150 notices, 7 brands the model never saw</p>
+  <h1>0% → 63% → <span class="yellow">100%</span></h1>
+  <table>
+    <tr><th></th><th>stock</th><th>+2 examples in prompt</th><th>fine-tuned</th></tr>
+    <tr><td>card format correct</td><td class="num bad">0%</td><td class="num">63%</td><td class="num win">100%</td></tr>
+    <tr><td>reading grade (letters: 12.7)</td><td class="num">13.0</td><td class="num">8.0</td><td class="num win">7.3</td></tr>
+    <tr><td>jargon / 100 words</td><td class="num">2.5</td><td class="num">2.3</td><td class="num win">0.7</td></tr>
+    <tr><td>prompt tokens</td><td class="num">427</td><td class="num">1,334</td><td class="num win">427</td></tr>
+  </table>
+  <p class="sub" style="margin-top:2.5vh">The app has three bays — anyone can re-run this race, live.</p>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>held out by manufacturer, not at random</span><span>macro-F1 reported, accuracy is a trap here</span></div>
+</section>
+
+<!-- ============ 6 · THE FAILURE ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">The result I'm proudest of <span class="innovation">Innovation 2 · a replicated negative</span></p>
+  <h1>We trained it twice to say<br>"<span class="yellow">STOP DRIVING</span>." It wouldn't.</h1>
+  <ul class="bullets">
+    <li>Run 1, uniform data: rare-warning recall <b class="bad">0%</b></li>
+    <li>Run 2, rare cases ×8 (16% of the mix): <b class="bad">still 0%</b> — even on letters it trained on</li>
+    <li>Why: the warning is <b>3 tokens out of ~130</b>. Token-averaged loss never feels it.</li>
+    <li>Class imbalance wasn't the problem. <b>Token imbalance was.</b></li>
+  </ul>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>eval loss 0.05 — and still silent</span><span>replicated, not anecdotal</span></div>
+</section>
+
+<!-- ============ 7 · THE FIX ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <p class="kicker">The fix <span class="innovation">Innovation 3 · three-layer safety design</span></p>
+  <h1>Stop asking the model</h1>
+  <table>
+    <tr><th>who makes the do-not-drive call</th><th>recall</th></tr>
+    <tr><td>the fine-tuned model (both versions)</td><td class="num bad">0%</td></tr>
+    <tr><td>15 lines of rules reading the letter</td><td class="num">73% <span class="good">= all the text contains</span></td></tr>
+    <tr><td>NHTSA's official flags</td><td class="num good">100%</td></tr>
+  </table>
+  <p class="bigline">The model writes the prose.<br><span class="yellow">The alarm is never its call.</span></p>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>all three layers ship in the live app</span><span>0% / 73% / 100%</span></div>
+</section>
+
+<!-- ============ 8 · CLOSE ============ -->
+<section class="slide">
+  <div class="hazard hazard-top"></div>
+  <span class="plate">RECAL·CLR</span>
+  <h1>20 MB. 25 minutes. A laptop.<br>Grade 13 → <span class="yellow">grade 7</span>.</h1>
+  <ul class="bullets">
+    <li><b>Repo</b> github.com/hanfuzhao/Module4-RecallClear — 16 reviewed PRs · 85 tests · CI</li>
+    <li><b>Model</b> huggingface.co/HanfuZhao781/recallclear-smollm2-135m-lora</li>
+    <li><b>App</b> recallclear-166936551184.us-central1.run.app</li>
+  </ul>
+  <p class="sub" style="margin-top:2.5vh">…and the system knows exactly which decision the model is not allowed to make.</p>
+  <div class="hazard hazard-bottom"></div>
+  <div class="foot"><span>thank you</span><span>hanfuzhao · Duke AIPI 540</span></div>
+</section>
+
+<div class="counter" id="counter">1 / 8</div>
+
+<script>
+(function () {
+  "use strict";
+  var slides = document.querySelectorAll(".slide");
+  var index = 0;
+  function go(n) {
+    index = Math.max(0, Math.min(slides.length - 1, n));
+    for (var i = 0; i < slides.length; i += 1) {
+      slides[i].classList.toggle("is-active", i === index);
+    }
+    document.getElementById("counter").textContent = (index + 1) + " / " + slides.length;
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { go(index + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { go(index - 1); }
+    else if (e.key === "Home") { go(0); }
+    else if (e.key.toLowerCase() === "f") {
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+      else { document.documentElement.requestFullscreen(); }
+    }
+  });
+  document.addEventListener("click", function () { go(index + 1); });
+  // Deep-link: slides.html#5 opens on slide 5 (handy for rehearsal).
+  var fromHash = parseInt((location.hash || "").slice(1), 10);
+  if (fromHash >= 1 && fromHash <= slides.length) { go(fromHash - 1); }
+})();
+</script>
+</body>
+</html>
