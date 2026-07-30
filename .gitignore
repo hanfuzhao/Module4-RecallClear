@@ -45,3 +45,8 @@ wandb/
 # Local caches
 .cache/
 *.log
+
+# Pitch materials (script, slide deck, deck generator) are presentation
+# assets, not part of the submitted codebase. They stay local-only.
+docs/
+scripts/make_deck.py
