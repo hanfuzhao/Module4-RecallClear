@@ -1,211 +1,127 @@
-# RecallClear — pitch：每页幻灯片 + 对应讲稿
+# RecallClear — 5 分钟 pitch（每页幻灯 + 讲稿）
 
-配套文件：`slides.pptx`（PowerPoint 放映用）/ `slides.html`（浏览器版，**F** 全屏 **→** 翻页）。
-硬性限时 **5:00**。全稿 ~610 词——**慢慢讲刚好五分钟**，讲快了会提前念完，所以慢就是对。
-规则：**幻灯片上没有的数字，嘴里不说**；所有数字出自 `data/outputs/evaluation.json`。
+放映：`slides.pptx`（或浏览器开 `slides.html`，F 全屏，→ 翻页）。
+全稿 ~520 词，**慢慢念刚好 5 分钟**。规则只有一条：幻灯片上没有的数字不说。
 
-三个创新点在第 4、6、7 页（红色 INNOVATION 标），这三页语速放最慢。
+**Demo 只做一次准备**：录制前打开应用 → 点 glovebox **第一个例子
+（Porsche Cars North America）** → 点 **Race all three** → 跑完别动这个标签页。
 
 ---
 
-## Slide 1 · 开场钩子 (0:00 – 0:30)
+## Slide 1 · 开场 (0:00–0:30)
 
-**画面**：奶油色信纸 + 红色 SAFETY RECALL 印章，一句真实召回原文；底部一行
-"11,591 letters · grade 12.7"。
-
-**讲稿：**
-
-> Let me read you one sentence from a real letter. Millions of Americans get
-> this in the mail.
+> Let me read you one sentence from a real letter that millions of Americans
+> get in the mail.
 >
 > *"Underbody heat and noise insulators may loosen and contact the aluminum
 > driveshaft, which could damage the driveshaft and cause it to fracture."*
 >
-> This is a **safety recall**. It's telling you your car might be dangerous.
-> And it reads like a legal contract. We measured eleven thousand of these
-> letters. The average reading level? **College.**
-
-（引文放慢读；读完停一拍再说 "This is a safety recall."）
+> This is a safety recall. Your car might be dangerous — and the warning
+> reads like a legal contract. We measured eleven thousand of these letters.
+> Average reading level: **college**.
 
 ---
 
-## Slide 2 · 问题 (0:30 – 0:55)
+## Slide 2 · 问题 (0:30–0:55)
 
-**画面**：大标题 "1 IN 4 CARS HAS AN OPEN SAFETY RECALL"，三个要点。
-
-**讲稿：**
-
-> Here's the bigger picture. **One in four** cars on U.S. roads has an open
-> safety recall. The repair is **always free** — that's federal law. But
-> owners still don't get it fixed. Because the letter never answers the three
-> things you actually want to know: how bad is this, what do I do, and what
-> does it cost me.
+> One in four cars on U.S. roads has an open safety recall. The repair is
+> always **free** — that's federal law. But owners still don't get it fixed,
+> because the letter never answers three simple questions: how bad is this,
+> what do I do, and what does it cost me.
 
 ---
 
-## Slide 3 · 产品 (0:55 – 1:25)
-
-**画面**：黄色车牌 RECAL·CLR，五行卡片结构，一句 "Live web app"。
-
-**讲稿：**
+## Slide 3 · 产品 (0:55–1:20)
 
 > So I built **RecallClear**. It turns any recall letter into five plain
-> lines. What's wrong. What could happen. How urgent — as a road-sign answer.
-> What to do, with the phone number. And what it costs — which is always
-> **"nothing."**
+> lines: what's wrong, what could happen, how urgent, what to do — with the
+> phone number — and what it costs, which is always "nothing."
 >
-> It's a live web app. Paste your letter — or just type the recall number —
-> and you get your answer.
+> It's a live web app. Paste your letter, or just the recall number.
 
 ---
 
-## Slide 4 · 方法 (1:25 – 2:10) ⭐ 创新点 1：公开数据自建监督信号
+## Slide 4 · 方法 (1:20–2:05) ⭐ 创新点 1
 
-**画面**：标题 "LoRA on a 135M model, trained on a laptop CPU"；左侧三个要点
-（11,591 条 / 零人工标注 / 3.5% 权重 = 20 MB），右侧实测小表（25 min · CPU 4× · ~4 s）。
-
-**讲稿：**
-
-> Under the hood: I fine-tuned **SmolLM2** — a 135-million-parameter model —
-> with **LoRA**. Only three and a half percent of the weights. The whole
-> adapter is **twenty megabytes**.
+> I fine-tuned **SmolLM2**, a 135-million-parameter model, with **LoRA** —
+> three percent of the weights, a **20-megabyte** adapter.
 >
-> First innovation: the training data. I didn't hand-label anything. I took
-> **eleven thousand five hundred real notices** from the government's open
-> database, and built every training target with **auditable rules** — using
-> NHTSA's own structured fields, and their official safety flags as gold
-> labels.
+> The first innovation is the data. **Nothing was hand-labeled.** I took
+> **11,591 real notices** from the government's open database and built every
+> training target with auditable rules, using NHTSA's own fields and official
+> safety flags as gold labels.
 >
-> And here's the fun part: the whole thing trained in **25 minutes, on a
-> laptop CPU**. I benchmarked it — on my machine, the CPU beat the GPU by
-> **four times**.
-
-（超时唯一可砍的句子：最后那句 CPU/GPU。若现场被追问"为什么"，一句话答案：
-Metal 按张量形状缓存显存、16 GB 统一内存被逼进 swap——细节在 README 和 PR #11。）
+> The whole training run took **25 minutes, on my laptop's CPU**.
 
 ---
 
-## Slide 5 · 前后对比 (2:10 – 2:50) ⏱ 锚点：2:10 必须讲到本页
+## Slide 5 · 前后对比 + Demo (2:05–2:50) ⏱ 2:05 必须到本页
 
-**画面**：大字 "0% → 63% → 100%"，四行对比表（格式 / 阅读等级 / 术语 / prompt tokens）。
-
-**讲稿：**
-
-> Did it learn? I held out **seven car brands completely** — the model never
-> saw a single Subaru or Tesla notice. Then I compared three systems. The
-> stock model. The stock model with examples stuffed into the prompt — that's
-> the honest baseline. And my fine-tune.
+> Did it learn? I held out **seven brands completely** — the model never saw
+> one Porsche or Tesla notice — and compared three systems: the stock model,
+> the stock model with examples in the prompt, and my fine-tune.
 >
-> Correct card format: stock, **zero** percent. Prompting, **sixty-three**.
-> Fine-tuned: **one hundred percent. Every single letter.** Reading grade
-> dropped from thirteen to **seven**. At **one-third** of the prompt tokens.
->
-> And you don't have to trust me — the app has **three bays**, one per
-> system. Run the race yourself.
->
-> Here it is on a real one — a **Porsche 918**, from the glovebox. Stock:
-> no card. Fine-tuned: all five sections. Same engine, twenty megabytes apart.
+> Format correct: **zero**, sixty-three, **one hundred percent**. Reading
+> grade: thirteen down to **seven**. And the fine-tune uses one-third of the
+> prompt tokens.
 
-**Demo 操作（本页切到浏览器）：**
+**【切浏览器】** 展示已跑完的三个车位，镜头从左扫到右：
 
-1. **录制开始前**就打开应用，点 glovebox 里的 **Porsche Cars North America**
-   （14V816000，918 超跑，悬挂下摆臂断裂），点 **Race all three** 跑完——
-   录到本页时结果已经在屏幕上，不用观众等 20 秒生成。
-2. 镜头给三个车位：BAY 1 无卡片 ✗ → BAY 3 五段完整 ✓，扫一眼即可。
-3. **先不要滚动到顶部的红色横幅**——那是第 7 页的弹药，别提前剧透。
+> Here it is live, on that Porsche 918 from the glovebox. Stock: no card.
+> Fine-tuned: all five sections. Same engine — twenty megabytes apart.
+
+⚠️ **别滚到页面顶部**——红色横幅是第 7 页的。**【切回 PPT】**
 
 ---
 
-## Slide 6 · 失败 (2:50 – 3:50) ⭐ 创新点 2：可复现的负结果
+## Slide 6 · 失败 (2:50–3:45) ⭐ 创新点 2
 
-**画面**：标题 'We trained it twice to say "STOP DRIVING." It wouldn't.'，四个要点。
-
-**讲稿：**
-
-> Now the result I'm most proud of. It's a **failure**.
+> Now the result I'm most proud of — a **failure**.
 >
-> Some letters carry the government's highest warning: **do not drive this
-> car**. I trained the model to say "STOP DRIVING." Recall on unseen brands:
-> **zero percent.** So I oversampled those cases eight times and retrained.
-> **Still zero.** Even on letters it had already seen in training.
+> Some letters carry the government's highest warning: **do not drive**. I
+> trained the model to say "STOP DRIVING." Recall: **zero percent**. I
+> oversampled those cases eight times and retrained. **Still zero** — even on
+> letters it had seen in training. ⏸（停两拍）
 >
-> Why? That warning is **three tokens** out of a 130-token answer. The loss
-> function averages over all the tokens — so the model can look nearly
-> perfect, and never once sound the alarm.
+> Why? That warning is **three tokens** out of a 130-token answer, and the
+> loss averages over tokens. The model looks nearly perfect — and never
+> sounds the alarm. Class imbalance wasn't the problem. **Token imbalance
+> was.**
 >
-> Class imbalance was not the problem. **Token imbalance was.**
-
-（**"Still zero." 之后停两拍——全场最重的一句。** 最后一句一字一顿。
-顺带：你刚才 demo 的 Porsche 918 就是金标签 STOP DRIVING 的例子——屏幕上
-模型的卡片写的却是 GET IT FIXED SOON。下一页立刻兑现这个伏笔。）
+> And that Porsche on screen? It's actually a do-not-drive recall — and the
+> model's card said "get it fixed soon."
 
 ---
 
-## Slide 7 · 解法 (3:50 – 4:35) ⭐ 创新点 3：三层安全架构 ⏱ 锚点：3:50 必须讲到本页
+## Slide 7 · 解法 + Demo (3:45–4:35) ⭐ 创新点 3 ⏱ 3:45 必须到本页
 
-**画面**：标题 "STOP ASKING THE MODEL"，三行表（0% / 73% / 100%），
-大字口号 "The model writes the prose. The alarm is never its call."
+> So: **stop asking the model.** One table. The model: zero. **Fifteen lines
+> of rules** reading the letter: seventy-three percent — which is everything,
+> because only 73% of those letters say the warning in words at all. NHTSA's
+> official flags: one hundred.
 
-**讲稿：**
+**【切浏览器，滚到顶部】** 红色禁驾横幅和模型的黄色卡片同框：
 
-> So here's the design answer: **stop asking the model.** One table.
+> Look at the screen. The red banner — "do not drive" — came from the rules.
+> The model missed it; the system caught it.
 >
-> The model: zero percent. **Fifteen lines of rules** that just read the
-> letter: seventy-three percent — and seventy-three **is everything**,
-> because only seventy-three percent of those letters say the warning in
-> words at all. And NHTSA's official flags: one hundred.
->
-> The app ships all three layers. The model writes the prose — that's where
-> it went zero to a hundred. The rules and the flags own the alarm.
->
-> Our shop rule: **generation is the model's job. The alarm never is.**
->
-> And you already watched it work. That Porsche 918 is a real
-> do-not-drive recall. The model's card said "get it fixed soon" — wrong.
-> But look above it: the **red banner** — "do not drive this vehicle" —
-> that came from the rule, reading the letter. The system caught what the
-> model missed.
-
-**Demo 操作（本页第二次切回浏览器）：**
-
-滚动到页面顶部，让红色 do-not-drive 横幅和下方模型卡片的黄色
-"GET IT FIXED SOON" 同框——**一个画面就是整个第 6+7 页的论证**。停在这里
-念完本页最后两段。
+> Our shop rule: **the model writes the prose. The alarm is never its call.**
 
 ---
 
-## Slide 8 · 收尾 (4:35 – 5:00)
+## Slide 8 · 收尾 (4:35–5:00)
 
-**画面**：车牌 + "20 MB. 25 minutes. A laptop. Grade 13 → Grade 7."，三个链接。
-
-**讲稿：**
-
-> Everything is public. The repo — eighteen reviewed pull requests,
-> eighty-five tests. The model, on Hugging Face. And the live app.
+> Everything is public — the repo with twenty reviewed pull requests and
+> eighty-five tests, the model on Hugging Face, and the live app.
 >
-> A twenty-megabyte adapter, trained on a laptop, takes a government letter
-> from grade thirteen to grade seven — and the system knows exactly which
-> decision the model is **not allowed to make**.
->
-> Thank you.
+> A 20-megabyte adapter, trained on a laptop, takes a government letter from
+> grade thirteen to grade seven — and the system knows exactly which decision
+> the model is **not allowed to make**. Thank you.
 
 ---
 
-## 附：评分点对照（录完自查）
+## 备忘
 
-| 作业要求 | 出现在 |
-|---|---|
-| 微调了什么模型、什么策略 | Slide 4（SmolLM2-135M + LoRA 3.5% / 20 MB） |
-| before/after 对比 | Slide 5（0→63→100 表）+ 三车位实况 |
-| 风险/伦理/评估反思 | Slide 6–7（负结果 + 三层架构） |
-
-## 附：录制备忘
-
-- 全稿 ~610 词。感觉快了就在句号处多停，**不要删句子**。
-- 幻灯片外的数字一个都不加；数字全部出自 `data/outputs/evaluation.json`。
-- Demo 全程只用一个例子：glovebox 的 **Porsche Cars North America / 14V816000**。
-  它一石三鸟——Slide 5 秀格式对比，Slide 6 是它的伏笔，Slide 7 红横幅收尾。
-- 录制前 5 分钟先预热：打开应用 → 点 Porsche → Race all three → 保持该标签页不动。
-- 实况若翻车，退路是 `data/outputs/before_after.jsonl`（150 条对比全部预生成，
-  14V816000 也在里面）。
-- 手机竖屏给应用一个镜头——召回信本来就是在手机上被读（或被删）的。
+- 快了不砍句子，在句号处多停。唯一可砍：Slide 4 最后一句（25 分钟那句）。
+- Demo 翻车退路：`data/outputs/before_after.jsonl`（14V816000 在内，全部预生成）。
+- 评分点：策略 = Slide 4；before/after = Slide 5；伦理反思 = Slide 6–7。
