@@ -26,7 +26,7 @@ the notice itself is unreadable. Here is a real one, verbatim:
 > control if the driveshaft contacts the ground. Additionally, unintended
 > movement could occur while parked if the parking brake is not engaged.
 
-The measured reading level across the corpus is **grade 11.8** — roughly a
+The measured reading level across the corpus is **grade 12.4** — roughly a
 first-year-of-college text, mailed to the entire driving population. It never
 answers the three questions an owner actually has: *how bad is this, what do I do
 now, and what will it cost me?*
@@ -238,7 +238,7 @@ shows the original notice next to the rewrite for exactly this reason.
 │   ├── raw/                  downloaded notices (regenerable, git-ignored)
 │   ├── processed/            train / validation / test splits
 │   └── outputs/              metrics and before/after samples
-├── tests/                    70 unit tests, no model weights needed
+├── tests/                    85 unit tests, no model weights needed
 └── notebooks/                exploration only
 ```
 
@@ -255,7 +255,7 @@ Or stage by stage:
 
 ```bash
 make data        # download 11,677 notices from the DOT open-data portal (~30s)
-make features    # build 11,448 cards and the held-out splits (~10s)
+make features    # build 11,591 cards and the held-out splits (~10s)
 make train       # LoRA fine-tune (~1h on an M1 Pro, much faster on a GPU)
 make evaluate    # score tuned vs base vs few-shot on held-out brands
 make demo        # print one before/after comparison
@@ -267,7 +267,7 @@ make app         # serve the web app
 
 | committed | not committed |
 |---|---|
-| `models/adapter/` — the trained LoRA weights (~35 MB) | `data/raw/` — a byte-for-byte reproducible public export |
+| `models/adapter/` — the trained LoRA weights (~22 MB) | `data/raw/` — a byte-for-byte reproducible public export |
 | `data/processed/test.jsonl` — held-out notices the app serves as demos | `data/processed/train.jsonl` — regenerates in ~10s from the raw download |
 | `data/processed/validation.jsonl` | `models/checkpoints/` — training scratch |
 | `data/outputs/` — metrics and before/after samples | |
@@ -302,7 +302,7 @@ history (PR #13) documents each.
 ## Attribution
 
 - Recall data: NHTSA / U.S. Department of Transportation, public domain.
-- Base model: [SmolLM2-360M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct), Apache 2.0.
+- Base model: [SmolLM2-135M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct), Apache 2.0.
 - LoRA: Hu et al., [*LoRA: Low-Rank Adaptation of Large Language Models*](https://arxiv.org/abs/2106.09685) (2021), via [PEFT](https://github.com/huggingface/peft).
 - Readability: Flesch-Kincaid grade level (Kincaid et al., 1975), implemented from the published formula in `scripts/plain_language.py`.
 - Portions of the code were developed with help from an AI coding assistant
