@@ -1,6 +1,7 @@
 """LoRA fine-tuning and inference for the RecallClear plain-language model.
 
-https://arxiv.org/abs/2106.09685) of the base model named in
+LoRA method: Hu et al. 2021, https://arxiv.org/abs/2106.09685
+Training loop adapted from the PEFT causal LM recipe:
 https://huggingface.co/docs/peft/task_guides/clm-prompt-tuning
 """
 

@@ -1,7 +1,9 @@
 """Download real vehicle safety-recall notices published by NHTSA.
 
+Data source: NHTSA Recalls Data, U.S. DOT open data portal, public domain.
 https://data.transportation.gov/d/6axg-epim
-python -m scripts.make_dataset
+
+Run: python -m scripts.make_dataset
 """
 
 from __future__ import annotations
