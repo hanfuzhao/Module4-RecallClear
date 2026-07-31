@@ -1,14 +1,4 @@
-"""Enforce the project's two structural code rules.
-
-1. No loose executable code at module level -- statements belong in functions,
-   classes, or under ``if __name__ == "__main__"``.
-2. Every module, class, and public function carries a docstring.
-
-Run as part of CI, or directly:
-
-    python scripts/check_style.py
-    python scripts/check_style.py --paths scripts main.py
-"""
+"""Enforce the project's two structural code rules."""
 
 from __future__ import annotations
 
@@ -19,18 +9,18 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# Module-level node types that are legitimately not "executable logic".
+
 ALLOWED_TOP_LEVEL = (
     ast.Import,
     ast.ImportFrom,
     ast.FunctionDef,
     ast.AsyncFunctionDef,
     ast.ClassDef,
-    ast.Assign,          # constants and configuration
+    ast.Assign,
     ast.AnnAssign,
-    ast.Expr,            # docstrings (checked below)
-    ast.If,              # __main__ guards and conditional imports
-    ast.Try,             # optional-import fallbacks
+    ast.Expr,
+    ast.If,
+    ast.Try,
 )
 
 DEFAULT_PATHS = ("scripts", "tests", "main.py", "setup.py")
@@ -77,7 +67,7 @@ def check_module(path: Path) -> list[str]:
                 "move it into a function or under __main__"
             )
         elif isinstance(node, ast.If) and not _is_main_guard(node):
-            # Conditional imports and constant setup are fine; calls are not.
+
             for inner in ast.walk(node):
                 if isinstance(inner, ast.Call) and not _contains_import(node):
                     problems.append(
@@ -88,9 +78,9 @@ def check_module(path: Path) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             if node.name.startswith("_"):
-                continue  # private helpers and dunders document themselves
+                continue
             if node.name.startswith("test_") or node.name in {"setUp", "tearDown"}:
-                continue  # unittest convention: the method name is the description
+                continue
             if not ast.get_docstring(node):
                 problems.append(f"{relative}:{node.lineno}: '{node.name}' is missing a docstring")
 

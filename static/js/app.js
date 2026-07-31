@@ -1,7 +1,3 @@
-/* RecallClear front-end: three model bays, each runnable on its own.
-   Plain JavaScript, no build step, no third-party scripts. All DOM built with
-   createElement/textContent so model output can never inject markup. */
-
 (function () {
   "use strict";
 
@@ -33,7 +29,7 @@
   var busyModes = {};
   var warningsShown = false;
 
-  /* -- helpers ------------------------------------------------------------ */
+  
 
   function byId(id) { return document.getElementById(id); }
   function show(el) { if (el) { el.classList.remove("is-hidden"); } }
@@ -63,7 +59,7 @@
     return (elements.noticeInput.value || "").trim();
   }
 
-  /* -- tabs --------------------------------------------------------------- */
+  
 
   function activateTab(tabId, panelId) {
     var tabs = document.querySelectorAll(".tab");
@@ -78,7 +74,7 @@
     }
   }
 
-  /* -- official / detected warnings --------------------------------------- */
+  
 
   function renderOfficialWarnings(warnings, source) {
     var container = elements.officialBanners;
@@ -132,7 +128,7 @@
     return banner;
   }
 
-  /* -- bay rendering ------------------------------------------------------ */
+  
 
   function bayStatus(mode, message, isError, isBusy) {
     var box = document.querySelector('[data-status="' + mode + '"]');
@@ -234,7 +230,7 @@
     list.appendChild(item);
   }
 
-  /* -- actions ------------------------------------------------------------ */
+  
 
   function runMode(mode) {
     var notice = currentNotice();
@@ -265,8 +261,6 @@
   }
 
   function runAll() {
-    // Sequential on purpose: the server serialises generation on one CPU, so
-    // firing three at once only makes the first one's clock look worse.
     setStatus("Racing all three bays — the crib sheet goes last, it is the slow one.", false);
     runMode("tuned")
       .then(function () { return runMode("base"); })
@@ -314,10 +308,10 @@
       .then(function (data) {
         if (data.status === "ok") { elements.healthDot.classList.add("is-ready"); }
       })
-      .catch(function () { /* cosmetic */ });
+      .catch(function () {  });
   }
 
-  /* -- wiring ------------------------------------------------------------- */
+  
 
   function init() {
     elements = {

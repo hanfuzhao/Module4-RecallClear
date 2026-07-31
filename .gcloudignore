@@ -1,5 +1,3 @@
-# Upload only what the container build needs. Unlike .gitignore, this must
-# INCLUDE the committed adapter weights and demo data.
 .git/
 .github/
 notebooks/

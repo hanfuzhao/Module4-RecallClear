@@ -1,18 +1,6 @@
 """RecallClear web application.
 
-Runs the fine-tuned model that rewrites official NHTSA vehicle-recall notices
-into plain language a car owner can act on. Start it with:
-
-    python main.py                # http://127.0.0.1:7860
-    gunicorn --bind 0.0.0.0:7860 main:app
-
-Routes
-------
-GET  /             the single-page interface
-GET  /api/health   readiness probe (also reports whether weights are loaded)
-GET  /api/examples curated held-out notices for one-click demos
-POST /api/lookup   fetch a live recall by NHTSA campaign number
-POST /api/explain  rewrite a notice, optionally alongside the untuned baseline
+python main.py                # http://127.0.0.1:7860
 """
 
 from __future__ import annotations
@@ -35,11 +23,7 @@ from scripts.recall_lookup import (
 MAX_NOTICE_CHARACTERS = 6000
 
 def configure_logging() -> logging.Logger:
-    """Configure application logging and return the app logger.
-
-    Done at import rather than in ``main()`` because a WSGI server such as
-    gunicorn imports ``app`` directly and never calls ``main()``.
-    """
+    """Configure application logging and return the app logger."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     return logging.getLogger("recallclear")
 
@@ -99,7 +83,7 @@ def lookup() -> tuple:
         return jsonify({"error": str(error)}), 400
     except CampaignNotFoundError:
         return jsonify({"error": f"NHTSA has no recall numbered {campaign_number}."}), 404
-    except Exception as error:  # upstream outage or network failure
+    except Exception as error:
         logger.warning("NHTSA lookup failed: %s", error)
         return jsonify({"error": "Could not reach the NHTSA recalls service. Try again shortly."}), 502
 
@@ -116,14 +100,7 @@ def lookup() -> tuple:
 
 @app.route("/api/explain", methods=["POST"])
 def explain() -> tuple:
-    """Run one of the three systems on a notice and return its card.
-
-    ``mode`` selects the system -- ``base`` (untuned), ``few_shot`` (untuned
-    plus two worked examples in the prompt), or ``tuned`` (LoRA adapter). Each
-    runs independently so the interface can drive them as separate bays. The
-    legacy shape (no ``mode``, optional ``include_baseline``) is kept for
-    older clients.
-    """
+    """Run one of the three systems on a notice and return its card."""
     payload = request.get_json(silent=True) or {}
     notice = (payload.get("notice") or "").strip()
     mode = (payload.get("mode") or "").strip()
@@ -140,19 +117,19 @@ def explain() -> tuple:
     try:
         common = {
             "notice_metrics": ExplainerService.notice_metrics(notice),
-            # Deterministic safety layer: top-level warnings are detected from
-            # the notice text, never taken from any model's urgency line.
+
+
             "text_warnings": ExplainerService.text_warnings(notice),
         }
         if mode:
             result = {**common, "mode": mode, "result": explainer_service.explain(notice, mode=mode)}
-        else:  # legacy shape
+        else:
             result = {**common, "tuned": explainer_service.explain(notice)}
             if bool(payload.get("include_baseline")):
                 result["base"] = explainer_service.explain(
                     notice, mode=RecallExplainer.MODE_BASE
                 )
-    except RuntimeError as error:  # adapter missing
+    except RuntimeError as error:
         logger.error("Generation failed: %s", error)
         return jsonify({"error": str(error)}), 503
 

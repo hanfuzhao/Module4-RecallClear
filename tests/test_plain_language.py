@@ -204,12 +204,7 @@ class ParseCardTests(unittest.TestCase):
 
 
 class BoilerplateRegressionTests(unittest.TestCase):
-    """Regressions for defects found by inspecting generated cards.
-
-    Each of these produced visibly broken output in the training targets before
-    it was fixed, which is worse than a crash: the model would have learned to
-    reproduce the mistake.
-    """
+    """Regressions for defects found by inspecting generated cards."""
 
     PORSCHE = {
         "manufacturer": "Porsche Cars North America, Inc.",
@@ -274,12 +269,7 @@ class BoilerplateRegressionTests(unittest.TestCase):
 
 
 class TextWarningDetectionTests(unittest.TestCase):
-    """The deterministic safety layer for the paste path.
-
-    Two training runs showed the model defaults to the majority urgency even on
-    notices containing explicit warning language, so these warnings must come
-    from rules. False negatives here are the failure mode with a safety cost.
-    """
+    """The deterministic safety layer for the paste path."""
 
     def test_do_not_drive_wording_is_detected(self) -> None:
         for phrase in (

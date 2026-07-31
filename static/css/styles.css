@@ -1,8 +1,3 @@
-/* RecallClear — visual language borrowed from the road, not from dashboards:
-   license-plate lockup, hazard stripes, road-sign urgency colors, and the
-   recall letter itself styled as the piece of paper it is.
-   Self-contained: system fonts only, no CDN, renders identically offline. */
-
 :root {
   --asphalt: #1b1d21;
   --paint-yellow: #f7b500;
@@ -31,7 +26,7 @@
     --line: #33373e;
     --ink: #e9e7e0;
     --ink-soft: #9aa0a8;
-    --paper: #f4efe1;      /* the letter stays paper — it is a physical object */
+    --paper: #f4efe1;      
     --paper-edge: #c9c0a8;
   }
 }
@@ -67,8 +62,6 @@ body {
 a { color: var(--sign-blue); }
 @media (prefers-color-scheme: dark) { a { color: #7fb3ff; } }
 
-/* ---- hazard stripe ------------------------------------------------------ */
-
 .hazard {
   height: 10px;
   background: repeating-linear-gradient(
@@ -77,8 +70,6 @@ a { color: var(--sign-blue); }
     var(--paint-yellow) 14px 28px
   );
 }
-
-/* ---- masthead ----------------------------------------------------------- */
 
 .masthead { background: var(--asphalt); color: #f2f2ef; }
 
@@ -121,8 +112,6 @@ a { color: var(--sign-blue); }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: #5c6068; }
 .dot.is-ready { background: #3fca6b; box-shadow: 0 0 6px #3fca6b; }
 
-/* ---- stages ------------------------------------------------------------- */
-
 .stage {
   position: relative;
   background: var(--card);
@@ -150,8 +139,6 @@ a { color: var(--sign-blue); }
 .lede { margin: -6px 0 18px; color: var(--ink-soft); max-width: 62ch; }
 .help { color: var(--ink-soft); font-size: 13.5px; margin: 8px 0 0; }
 
-/* ---- tabs --------------------------------------------------------------- */
-
 .tabs { display: flex; gap: 0; margin-bottom: 18px; border-bottom: 2px solid var(--line); }
 
 .tab {
@@ -178,8 +165,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 
 .lookup-row { display: flex; gap: 10px; }
 .lookup-row input { flex: 1; min-width: 0; }
-
-/* ---- the letter --------------------------------------------------------- */
 
 .letter {
   background: var(--paper);
@@ -219,8 +204,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
   max-height: 380px; overflow: auto;
 }
 
-/* ---- glovebox examples -------------------------------------------------- */
-
 .glovebox { margin-top: 20px; }
 .glovebox-label { font-size: 13.5px; font-weight: 700; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
@@ -229,15 +212,13 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
   display: inline-flex; flex-direction: column; align-items: flex-start;
   padding: 7px 13px 6px; cursor: pointer;
   background: var(--paper); border: 1px solid var(--paper-edge);
-  border-radius: 2px 8px 2px 2px;   /* manila-folder corner */
+  border-radius: 2px 8px 2px 2px;   
   font: inherit; color: #262319; text-align: left;
   box-shadow: 1px 2px 0 rgba(0,0,0,.07);
 }
 .chip:hover { transform: translateY(-1px); border-color: #b3a67e; }
 .chip-make { font-family: var(--condensed); font-weight: 700; font-size: 14px; letter-spacing: .3px; }
 .chip-sub { font-family: var(--mono); font-size: 10.5px; color: #6b6452; }
-
-/* ---- buttons ------------------------------------------------------------ */
 
 .btn {
   border: none; cursor: pointer; font: inherit;
@@ -258,8 +239,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 .btn-run:active:not(:disabled) { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
 
 .btn-run-tuned { background: var(--paint-yellow); border-color: #15150f; box-shadow: 3px 3px 0 #15150f; color: #15150f; }
-
-/* ---- official warnings -------------------------------------------------- */
 
 .stage-alert { padding: 18px 20px; border-width: 2px; }
 
@@ -284,8 +263,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
   .banner-warn  { background: #38260f; }
   .banner-danger p, .banner-warn p { color: #e9e7e0; }
 }
-
-/* ---- the garage --------------------------------------------------------- */
 
 .garage {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
@@ -322,8 +299,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 
 .bay-status { font-size: 13px; color: var(--ink-soft); min-height: 1.2em; }
 .bay-status.is-error { color: var(--sign-red); }
-
-/* per-bay result */
 
 .bay-result { border-top: 2px dashed var(--line); padding-top: 12px; }
 
@@ -368,8 +343,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 
 .garage-actions { display: flex; align-items: center; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
 
-/* ---- paste notice ------------------------------------------------------- */
-
 .paste-notice {
   margin: 16px 0 0; padding: 12px 15px;
   background: var(--paper); border: 1px solid var(--paper-edge);
@@ -379,8 +352,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 .paste-notice strong { color: #262319; }
 
 .status-error { color: var(--sign-red); }
-
-/* ---- dyno sheet --------------------------------------------------------- */
 
 .dyno-row { margin-bottom: 18px; }
 .dyno-label { display: block; font-weight: 700; font-size: 13.5px; margin-bottom: 8px; }
@@ -410,8 +381,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 .dyno-stat-v { font-family: var(--mono); font-size: 26px; font-weight: 700; }
 .dyno-stat-l { font-size: 11.5px; color: var(--ink-soft); line-height: 1.4; }
 
-/* ---- shop rules --------------------------------------------------------- */
-
 .stage-creed { background: var(--asphalt); color: #e6e6e2; border-color: #000; }
 .stage-creed h2 { color: #fff; }
 .creed { margin: 0; padding-left: 22px; }
@@ -419,15 +388,11 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
 .creed li:last-child { margin-bottom: 0; }
 .creed strong { color: var(--paint-yellow); }
 
-/* ---- footer ------------------------------------------------------------- */
-
 .road-footer { margin-top: 34px; background: var(--asphalt); color: #b9bdc4; }
 .footer-inner { padding: 22px 22px 30px; }
 .road-footer p { margin: 0 0 6px; font-size: 13px; }
 .road-footer a { color: #d7dae0; }
 .footer-personal { color: #8f949c; font-style: italic; }
-
-/* ---- loading ------------------------------------------------------------ */
 
 .spinner {
   display: inline-block; width: 12px; height: 12px; margin-right: 7px;
@@ -439,8 +404,6 @@ input[type="text"]:focus, textarea:focus, .btn:focus-visible, .chip:focus-visibl
   .spinner { animation: none; }
   .chip:hover, .btn-run:hover:not(:disabled), .btn-run:active:not(:disabled) { transform: none; }
 }
-
-/* ---- responsive --------------------------------------------------------- */
 
 @media (max-width: 900px) {
   .garage { grid-template-columns: 1fr; }

@@ -1,10 +1,6 @@
 """Render evaluation results into the README.
 
-Keeps the numbers quoted in the README identical to the ones in
-``data/outputs/evaluation.json`` by generating them, rather than copying them by
-hand and letting the two drift.
-
-    python -m scripts.report_results
+python -m scripts.report_results
 """
 
 from __future__ import annotations
@@ -25,7 +21,7 @@ SYSTEM_LABELS = {
     "tuned": "**fine-tuned**",
 }
 
-# (json key, row label, formatter, whether higher is better)
+
 METRIC_ROWS = (
     ("format_compliance", "Card format produced correctly", "percent"),
     ("urgency_macro_f1", "Urgency triage (macro-F1)", "ratio"),

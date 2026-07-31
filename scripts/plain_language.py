@@ -1,36 +1,13 @@
-"""Turn an official NHTSA recall notice into a plain-language owner card.
-
-This module holds the domain knowledge of the project:
-
-* ``JARGON_LEXICON`` -- curated technical-term to everyday-word mappings.
-* ``triage_urgency``  -- the four-level action ladder, anchored on NHTSA's own
-  ``parkIt`` / ``parkOutSide`` flags.
-* ``build_card``      -- the reference "after" text used as the training target.
-
-The card produced here is the *supervision signal*. It is derived from NHTSA's
-separate structured fields (Component / Summary / Consequence / Remedy). The
-fine-tuned model must learn to produce the same card from the raw notice text
-alone, which is the form owners actually receive in the mail.
-
-Readability scoring follows the standard Flesch-Kincaid grade-level formula
-(Kincaid et al., 1975); the implementation here is a small self-contained
-version so the project does not need an extra dependency.
-"""
+"""Turn an official NHTSA recall notice into a plain-language owner card."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, asdict
 
-# --------------------------------------------------------------------------- #
-# Jargon lexicon
-# --------------------------------------------------------------------------- #
 
-# Left side: terms that appear in real recall notices and that a typical owner
-# cannot be expected to know. Right side: the everyday phrase we teach the model
-# to use instead. Ordered longest-first at match time so multi-word entries win.
 JARGON_LEXICON: dict[str, str] = {
-    # Electrical / electronic
+
     "electronic stability control": "the anti-skid system",
     "supplemental restraint system": "the airbag system",
     "occupant classification system": "the sensor that decides if the airbag should fire",
@@ -49,7 +26,7 @@ JARGON_LEXICON: dict[str, str] = {
     "ground connection": "electrical ground",
     "software calibration": "software setting",
     "over-the-air": "wireless",
-    # Braking / steering / suspension
+
     "anti-lock brake": "anti-lock brake",
     "hydraulic control unit": "the brake pressure unit",
     "brake caliper": "brake clamp",
@@ -63,7 +40,7 @@ JARGON_LEXICON: dict[str, str] = {
     "lower control arm": "lower suspension arm",
     "strut assembly": "shock absorber unit",
     "electric power steering": "the electric power steering",
-    # Drivetrain
+
     "power train": "drivetrain",
     "powertrain": "drivetrain",
     "driveshaft": "drive shaft",
@@ -82,7 +59,7 @@ JARGON_LEXICON: dict[str, str] = {
     "exhaust gas recirculation": "the exhaust recycling system",
     "catalytic converter": "the exhaust cleaner",
     "turbocharger": "turbo",
-    # Body / restraints
+
     "inflator": "airbag inflator",
     "pretensioner": "seat-belt tightener",
     "seat belt anchorage": "the seat-belt mounting point",
@@ -95,7 +72,7 @@ JARGON_LEXICON: dict[str, str] = {
     "rear view camera": "backup camera",
     "back-up camera": "backup camera",
     "head restraint": "headrest",
-    # Regulatory / process language
+
     "federal motor vehicle safety standard": "the federal safety rule",
     "fmvss": "the federal safety rule",
     "does not conform to": "does not meet",
@@ -134,9 +111,8 @@ JARGON_LEXICON: dict[str, str] = {
     "increasing the risk of a crash": "making a crash more likely",
     "increase the risk of injury": "make injury more likely",
     "increasing the risk of injury": "making injury more likely",
-    # These read as noun phrases in the source ("can cause a loss of drive
-    # power"), so their replacements must stay noun phrases or the sentence
-    # falls apart.
+
+
     "loss of motive power": "loss of engine power",
     "loss of drive power": "loss of engine power",
     "loss of vehicle control": "loss of control of the car",
@@ -151,18 +127,13 @@ JARGON_LEXICON: dict[str, str] = {
     "prior to": "before",
 }
 
-# Terms counted by the "jargon rate" evaluation metric: opaque vocabulary whose
-# presence in an owner-facing text is a readability failure.
+
 JARGON_TERMS: tuple[str, ...] = tuple(
     term
     for term in JARGON_LEXICON
     if len(term.split()) >= 2 or term in {"fmvss", "inflator", "pretensioner", "noncompliance"}
 )
 
-
-# --------------------------------------------------------------------------- #
-# Urgency ladder
-# --------------------------------------------------------------------------- #
 
 URGENCY_STOP_DRIVING = "STOP DRIVING"
 URGENCY_PARK_OUTSIDE = "PARK OUTSIDE"
@@ -176,12 +147,7 @@ URGENCY_LEVELS = (
     URGENCY_SCHEDULE,
 )
 
-# Notice wording that carries the agency's own top-level warnings. Two training
-# runs established that the fine-tuned model cannot be trusted to surface these
-# (it defaults to the majority urgency even on notices it trained on), so the
-# application detects them deterministically and never leaves the call to the
-# model. Patterns are anchored to warning phrasing, not topics: "do not drive"
-# matches, "the vehicle may be driven to the dealer" must not.
+
 _TEXT_WARNING_STOP = re.compile(
     r"do not drive|not to drive|stop driving|should not be driven|"
     r"cease (?:driving|use)|discontinue (?:driving|use)|park (?:the vehicle )?immediately",
@@ -196,13 +162,7 @@ _TEXT_WARNING_PARK_OUTSIDE = re.compile(
 
 
 def detect_text_warnings(notice: str) -> dict[str, bool]:
-    """Detect NHTSA's top-level owner warnings in the notice text itself.
-
-    Used by the app on the paste path, where the agency's structured flags are
-    unavailable. Text detection recovers the ~60-73% of high-stakes notices
-    that state the warning in words; the rest are only knowable from the flags,
-    which is why lookup-by-campaign-number remains the recommended path.
-    """
+    """Detect NHTSA's top-level owner warnings in the notice text itself."""
     text = notice or ""
     return {
         "do_not_drive": bool(_TEXT_WARNING_STOP.search(text)),
@@ -210,8 +170,6 @@ def detect_text_warnings(notice: str) -> dict[str, bool]:
     }
 
 
-# Consequence wording that indicates a crash/fire/injury pathway. Used only for
-# the two lower rungs of the ladder; the top two rungs come from NHTSA flags.
 _HARM_PATTERNS = re.compile(
     r"\b(crash|fire|burn|injur|death|fatal|collision|loss of (?:vehicle )?control|"
     r"lose control|stall|roll ?away|fail to (?:deploy|inflate)|not deploy|"
@@ -228,13 +186,7 @@ _URGENCY_REASONS = {
 
 
 def triage_urgency(record: dict) -> tuple[str, str]:
-    """Return the ``(level, reason)`` pair for a recall record.
-
-    The top two levels are NHTSA's own ``do_not_drive`` and
-    ``fire_risk_when_parked`` flags and are therefore gold labels. The bottom two are derived from harm wording in
-    the Consequence field and are weaker, rule-based labels -- a limitation that
-    the evaluation reports explicitly.
-    """
+    """Return the ``(level, reason)`` pair for a recall record."""
     if _as_bool(record.get("park_it")):
         return URGENCY_STOP_DRIVING, _URGENCY_REASONS[URGENCY_STOP_DRIVING]
     if _as_bool(record.get("park_outside")):
@@ -254,16 +206,9 @@ def _as_bool(value: object) -> bool:
     return False
 
 
-# --------------------------------------------------------------------------- #
-# Text utilities
-# --------------------------------------------------------------------------- #
-
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
-# Abbreviations whose full stop must not end a sentence. Without these,
-# "Porsche Cars North America, Inc. (Porsche) is recalling ..." splits after
-# "Inc." and the company name survives as its own "sentence", which then leaks
-# into the card as though it were the defect description.
+
 _ABBREVIATIONS = (
     "Inc", "Co", "Corp", "Ltd", "LLC", "L.L.C", "Mfg", "Bros", "Div",
     "No", "Nos", "St", "Ave", "Rd", "Dr", "Mr", "Mrs", "Ms", "Jr", "Sr",
@@ -272,10 +217,9 @@ _ABBREVIATIONS = (
 _PROTECT_ABBREVIATION = re.compile(
     r"\b(" + "|".join(re.escape(item) for item in _ABBREVIATIONS) + r")\.(?=\s)"
 )
-_ABBREVIATION_PLACEHOLDER = "․"  # one-dot leader, absent from NHTSA text
+_ABBREVIATION_PLACEHOLDER = "․"
 
-# Sentences that describe *which vehicles* are affected rather than what is
-# wrong with them. NHTSA writes these in several forms across the corpus.
+
 _POPULATION_SENTENCE = re.compile(
     r"\bis recalling\b|\bare recalling\b|\bhas recalled\b|\bhave recalled\b|"
     r"\brecalling certain\b|\bare being recalled\b|\bis being recalled\b|"
@@ -284,8 +228,7 @@ _POPULATION_SENTENCE = re.compile(
     re.IGNORECASE,
 )
 
-# A usable defect sentence needs a verb suggesting a failure or a state. This
-# filters out stray fragments left behind by the population sentences.
+
 _DEFECT_VERB = re.compile(
     r"\b(may|can|could|will|might|is|are|was|were|has|have|do(?:es)?\s+not|"
     r"fail|fails|failed|lack|lacks|incorrect|improper)\b",
@@ -301,11 +244,7 @@ _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
 
 
 def split_sentences(text: str) -> list[str]:
-    """Split text into sentences, protecting abbreviations such as "Inc.".
-
-    NHTSA separates sentences with a double space, but company names end in an
-    abbreviation far too often for a naive full-stop split to work.
-    """
+    """Split text into sentences, protecting abbreviations such as "Inc."."""
     cleaned = re.sub(r"\s+", " ", (text or "")).strip()
     if not cleaned:
         return []
@@ -316,15 +255,13 @@ def split_sentences(text: str) -> list[str]:
     ]
 
 
-# Several replacements begin with an article, so substituting after an existing
-# article produces "from the the part that ...". Collapse those collisions.
 _ARTICLE_COLLISION = re.compile(r"\b(a|an|the)\s+(a|an|the)\b", re.IGNORECASE)
 
 
 def simplify_jargon(text: str) -> str:
     """Replace technical terms with everyday equivalents from the lexicon."""
     result = text
-    # Longest phrases first so "high-pressure fuel pump" beats "fuel pump".
+
     for term in sorted(JARGON_LEXICON, key=len, reverse=True):
         replacement = JARGON_LEXICON[term]
         if replacement.lower() == term.lower():
@@ -335,13 +272,7 @@ def simplify_jargon(text: str) -> str:
 
 
 def shorten(text: str, max_words: int = 34) -> str:
-    """Trim text to a word budget without leaving a sentence fragment.
-
-    Whole sentences are kept while they fit, because a clipped clause such as
-    "If the fob is dropped." reads as a mistake rather than as a summary. Only
-    when a single sentence is itself over budget is it cut, and then at a clause
-    boundary.
-    """
+    """Trim text to a word budget without leaving a sentence fragment."""
     words = text.split()
     if len(words) <= max_words:
         return text
@@ -358,7 +289,7 @@ def shorten(text: str, max_words: int = 34) -> str:
             used += length
         if kept and used <= max_words:
             return " ".join(kept)
-        text = sentences[0]  # first sentence alone is still too long; cut it
+        text = sentences[0]
         words = text.split()
         if len(words) <= max_words:
             return text
@@ -373,11 +304,7 @@ def shorten(text: str, max_words: int = 34) -> str:
 
 
 def _tidy(text: str, capitalise: bool = True) -> str:
-    """Normalise whitespace, capitalisation, and terminal punctuation.
-
-    ``capitalise=False`` is used for phrases spliced into the middle of a
-    sentence, such as the action that follows "The dealer will ...".
-    """
+    """Normalise whitespace, capitalisation, and terminal punctuation."""
     cleaned = re.sub(r"\s+", " ", text).strip().strip(",;")
     if not cleaned:
         return ""
@@ -420,18 +347,8 @@ def jargon_rate(text: str) -> float:
     return round(100.0 * hits / len(words), 2)
 
 
-# --------------------------------------------------------------------------- #
-# Field extraction
-# --------------------------------------------------------------------------- #
-
-
 def extract_defect(summary: str) -> str:
-    """Pull the defect description out of a Summary, dropping recall boilerplate.
-
-    A Summary reads "Ford is recalling certain 2021-2022 F-150 vehicles. The
-    insulators may loosen and contact the driveshaft ...". Only the second part
-    describes the actual problem.
-    """
+    """Pull the defect description out of a Summary, dropping recall boilerplate."""
     candidates = [
         sentence
         for sentence in split_sentences(summary)
@@ -468,10 +385,6 @@ def extract_phone(record: dict) -> str:
             return re.sub(r"\s", "-", match.group(0))
     return ""
 
-
-# --------------------------------------------------------------------------- #
-# The card
-# --------------------------------------------------------------------------- #
 
 CARD_SECTIONS = (
     "WHAT'S WRONG",
@@ -529,10 +442,6 @@ def _build_action_steps(record: dict, urgency: str, fix: str) -> str:
     return _tidy(opening) + fix_clause + contact
 
 
-# Everything a Remedy sentence puts in front of the actual repair action.
-# NHTSA's most common phrasing is "<Maker> will notify owners, and dealers will
-# <action>", so the lead-in has to be removed or the card reads "The dealer will
-# Porsche will notify owners, and dealers will replace ...".
 _REMEDY_LEAD_IN = re.compile(
     r"^.*?\b(?:authorized\s+|certified\s+)?(?:dealers?|technicians?|service centers?)\s+will\s+",
     re.IGNORECASE,
@@ -547,23 +456,19 @@ def _strip_remedy_lead_in(sentence: str) -> str:
     text = sentence.strip()
     if _REMEDY_LEAD_IN.search(text):
         return _REMEDY_LEAD_IN.sub("", text, count=1).strip()
-    # No "dealers will" clause: drop a bare "X will notify owners" preamble.
+
     return _REMEDY_NOTIFY_ONLY.sub("", text, count=1).strip()
 
 
 def _lowercase_first(sentence: str) -> str:
-    """Reduce a Remedy sentence to a lowercase action phrase.
-
-    The result is spliced after "The dealer will ...", so it must start with the
-    bare verb and must not repeat the manufacturer's name.
-    """
+    """Reduce a Remedy sentence to a lowercase action phrase."""
     text = simplify_jargon(_strip_remedy_lead_in(sentence))
     text = re.sub(r",?\s*at no cost to you\.?$", ".", text, flags=re.IGNORECASE)
     text = re.sub(r",?\s*free of charge\.?$", ".", text, flags=re.IGNORECASE)
     text = text.strip()
     if not text:
         return ""
-    if text[:2].isupper():  # acronym such as "ECU" -- leave it alone
+    if text[:2].isupper():
         return _tidy(text, capitalise=False)
     return _tidy(text[0].lower() + text[1:], capitalise=False)
 
@@ -577,16 +482,11 @@ def _short_manufacturer(name: str) -> str:
 
 
 def build_card(record: dict) -> RecallCard | None:
-    """Build the reference plain-language card, or ``None`` if the notice is unusable.
-
-    Returns ``None`` when the notice lacks a usable defect or consequence
-    description, which is the dataset's quality gate.
-    """
+    """Build the reference plain-language card, or ``None`` if the notice is unusable."""
     defect = extract_defect(record.get("summary") or "")
     consequence = record.get("consequence") or ""
-    # Five words is enough once the boilerplate is gone: "The front lower
-    # control arms may fracture." is a complete, usable defect description.
-    # The verb requirement in extract_defect does the real filtering.
+
+
     if len(defect.split()) < 5 or len(consequence.split()) < 5:
         return None
 
@@ -613,13 +513,7 @@ _SECTION_HEADING = re.compile(
 
 
 def parse_card(text: str) -> dict[str, str]:
-    """Extract the five card sections from a generated string.
-
-    Tolerates the decoration an untuned model tends to add (markdown bullets,
-    bold markers, numbering) so the format metric measures whether the model
-    produced the right *sections*, not whether it matched byte for byte.
-    Missing sections are simply absent from the returned mapping.
-    """
+    """Extract the five card sections from a generated string."""
     cleaned = (text or "").replace("**", "").replace("__", "")
     matches = list(_SECTION_HEADING.finditer(cleaned))
     sections: dict[str, str] = {}
@@ -633,17 +527,12 @@ def parse_card(text: str) -> dict[str, str]:
 
 
 def extract_urgency(text: str) -> str | None:
-    """Return the urgency level asserted in a generated card, if any.
-
-    The level must appear in the HOW URGENT section; a model that merely
-    mentions "stop driving" in prose elsewhere does not count as having made
-    the call.
-    """
+    """Return the urgency level asserted in a generated card, if any."""
     section = parse_card(text).get("HOW URGENT")
     if not section:
         return None
     upper = section.upper()
-    for level in URGENCY_LEVELS:  # longest labels first avoids partial hits
+    for level in URGENCY_LEVELS:
         if upper.startswith(level):
             return level
     for level in URGENCY_LEVELS:

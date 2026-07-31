@@ -1,9 +1,4 @@
-"""Service layer that the web application builds on.
-
-Holds the single loaded model, turns raw notice text into a structured card,
-and supplies the demo notices shown in the UI. Keeping this separate from the
-Flask routes means the same logic can be exercised from tests and the CLI.
-"""
+"""Service layer that the web application builds on."""
 
 from __future__ import annotations
 
@@ -26,16 +21,12 @@ from scripts.plain_language import (
     parse_card,
 )
 
-# Colour/severity ordering used by the UI, most urgent first.
+
 URGENCY_RANK = {level: index for index, level in enumerate(URGENCY_LEVELS)}
 
 
 class ExplainerService:
-    """Loads the fine-tuned model once and serves plain-language cards.
-
-    The model is loaded lazily on first use so the web process starts quickly
-    and a health check can succeed before the weights are in memory.
-    """
+    """Loads the fine-tuned model once and serves plain-language cards."""
 
     def __init__(
         self,
@@ -50,7 +41,6 @@ class ExplainerService:
         self._load_lock = threading.Lock()
         self._generate_lock = threading.Lock()
 
-    # -- model ------------------------------------------------------------- #
 
     @property
     def is_loaded(self) -> bool:
@@ -66,11 +56,7 @@ class ExplainerService:
 
                     import torch
 
-                    # Match torch to the container's CPU *allocation*, not the
-                    # host's core count: os.cpu_count() sees the physical
-                    # machine, and oversubscribing threads on a 4-vCPU quota
-                    # measurably slowed generation. OMP_NUM_THREADS is set to
-                    # the allocation in the Dockerfile.
+
                     allocated = int(os.environ.get("OMP_NUM_THREADS", "0") or 0)
                     torch.set_num_threads(allocated if allocated > 0 else max(1, os.cpu_count() or 1))
                     self._explainer = RecallExplainer(
@@ -78,15 +64,9 @@ class ExplainerService:
                     )
         return self._explainer
 
-    # -- generation -------------------------------------------------------- #
 
     def explain(self, notice: str, mode: str = RecallExplainer.MODE_TUNED) -> dict:
-        """Generate one card and return it with its readability measurements.
-
-        Generation is serialised with a lock: a single small model on a shared
-        CPU host handles concurrent requests far better one at a time than by
-        thrashing between them.
-        """
+        """Generate one card and return it with its readability measurements."""
         explainer = self.explainer()
         started = time.time()
         with self._generate_lock:
@@ -113,7 +93,6 @@ class ExplainerService:
             "tuned": self.explain(notice, mode=RecallExplainer.MODE_TUNED),
         }
 
-    # -- inputs ------------------------------------------------------------ #
 
     @staticmethod
     def notice_from_record(record: dict) -> str:
@@ -131,22 +110,12 @@ class ExplainerService:
 
     @staticmethod
     def text_warnings(notice: str) -> dict:
-        """Detect do-not-drive / park-outside wording in raw notice text.
-
-        The deterministic safety layer for the paste path: two training runs
-        showed the model defaults to the majority urgency even when the notice
-        says "do not drive", so the banner must never depend on it.
-        """
+        """Detect do-not-drive / park-outside wording in raw notice text."""
         return detect_text_warnings(notice)
 
     @staticmethod
     def official_warnings(record: dict) -> dict:
-        """Return NHTSA's own owner warnings for a record.
-
-        These come from the agency, not from the model. The UI shows them as an
-        authoritative banner precisely because the evaluation found the model
-        cannot reliably infer them from notice text alone.
-        """
+        """Return NHTSA's own owner warnings for a record."""
         return {
             "do_not_drive": bool(record.get("park_it")),
             "fire_risk_when_parked": bool(record.get("park_outside")),
@@ -168,11 +137,7 @@ class DemoLibrary:
         self._examples: list[dict] | None = None
 
     def examples(self) -> list[dict]:
-        """Return demo notices, preferring a spread of urgency levels.
-
-        Every example comes from the held-out brands, so nothing shown in the
-        demo was part of training.
-        """
+        """Return demo notices, preferring a spread of urgency levels."""
         if self._examples is not None:
             return self._examples
 
@@ -187,7 +152,7 @@ class DemoLibrary:
         seen_brands: set[str] = set()
         for row in rows:
             brand = row.get("brand", "")
-            # One example per brand first, so the gallery is not all one make.
+
             if brand in seen_brands and len(chosen) < self.count:
                 continue
             seen_brands.add(brand)
@@ -209,11 +174,7 @@ class DemoLibrary:
 
 
 def load_evaluation_summary(path: Path | None = None) -> dict:
-    """Load the headline evaluation numbers for display in the UI.
-
-    Returns an empty dict when evaluation has not been run yet, so the app
-    still works on a fresh checkout.
-    """
+    """Load the headline evaluation numbers for display in the UI."""
     path = path or config.OUTPUTS_DIR / "evaluation.json"
     if not path.exists():
         return {}

@@ -1,16 +1,6 @@
 """LoRA fine-tuning and inference for the RecallClear plain-language model.
 
-Strategy: parameter-efficient fine-tuning (LoRA, Hu et al. 2021,
 https://arxiv.org/abs/2106.09685) of the base model named in
-``config.BASE_MODEL_ID`` using the PEFT library. Only the low-rank adapter
-matrices are trained -- 2.3% of the parameters -- which keeps the run inside a
-laptop's memory budget and produces a ~35 MB artefact that can be committed to
-the repository and loaded on a free CPU host.
-
-Loss is computed on the assistant turn only: the prompt tokens are masked out so
-the model is scored on the card it must produce, not on the notice it is given.
-
-Adapted from the standard PEFT causal-LM recipe:
 https://huggingface.co/docs/peft/task_guides/clm-prompt-tuning
 """
 
@@ -38,11 +28,6 @@ from scripts.prompts import build_few_shot_messages, build_zero_shot_messages
 LABEL_IGNORE_INDEX = -100
 
 
-# --------------------------------------------------------------------------- #
-# Tokenisation
-# --------------------------------------------------------------------------- #
-
-
 def load_tokenizer(model_id: str = config.BASE_MODEL_ID) -> AutoTokenizer:
     """Load the base model's tokenizer with a padding token guaranteed."""
     tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -52,12 +37,7 @@ def load_tokenizer(model_id: str = config.BASE_MODEL_ID) -> AutoTokenizer:
 
 
 def encode_example(example: dict, tokenizer: AutoTokenizer, max_length: int) -> dict:
-    """Tokenise one example, masking the prompt so loss covers only the card.
-
-    The prompt is rendered with ``add_generation_prompt=True`` so its token
-    boundary matches exactly what inference will produce, and the target card
-    plus the end-of-turn token are appended after it.
-    """
+    """Tokenise one example, masking the prompt so loss covers only the card."""
     messages = example["messages"]
     prompt_messages = [message for message in messages if message["role"] != "assistant"]
     target_text = next(message["content"] for message in messages if message["role"] == "assistant")
@@ -68,7 +48,7 @@ def encode_example(example: dict, tokenizer: AutoTokenizer, max_length: int) -> 
         )["input_ids"]
     )
     target_ids = tokenizer(target_text, add_special_tokens=False)["input_ids"]
-    target_ids = target_ids + [tokenizer.eos_token_id]  # end-of-turn marker
+    target_ids = target_ids + [tokenizer.eos_token_id]
 
     input_ids = (prompt_ids + target_ids)[:max_length]
     labels = ([LABEL_IGNORE_INDEX] * len(prompt_ids) + target_ids)[:max_length]
@@ -86,16 +66,7 @@ def build_torch_dataset(
     max_length: int = config.MAX_SEQUENCE_LENGTH,
     drop_overlong: bool = True,
 ):
-    """Convert JSONL rows into a tokenised ``datasets.Dataset``.
-
-    Examples that do not fit in ``max_length`` are dropped rather than cut off.
-    Truncating would remove the tail of the target card, teaching the model to
-    stop mid-sentence; dropping a few long notices costs less than that.
-
-    ``datasets`` is imported here rather than at module level: it is a
-    training-time dependency, and the deployed app imports this module only for
-    ``RecallExplainer``.
-    """
+    """Convert JSONL rows into a tokenised ``datasets.Dataset``."""
     from datasets import Dataset
 
     dataset = Dataset.from_list([{"messages": row["messages"]} for row in rows])
@@ -114,24 +85,11 @@ def build_torch_dataset(
     return kept
 
 
-# --------------------------------------------------------------------------- #
-# Training
-# --------------------------------------------------------------------------- #
-
-
-# Padding every batch up to a multiple of this many tokens keeps the number of
-# distinct tensor shapes small. On Apple's Metal backend each new shape claims
-# its own cached buffers, so free-form dynamic padding makes memory grow without
-# bound across a run; bucketing turns hundreds of shapes into a handful.
 PAD_TO_MULTIPLE_OF = 64
 
 
 class ReleaseCacheCallback(TrainerCallback):
-    """Periodically hand cached device memory back to the allocator.
-
-    Metal does not release cached blocks on its own, and a long run on a
-    unified-memory laptop otherwise ends up swapping.
-    """
+    """Periodically hand cached device memory back to the allocator."""
 
     def __init__(self, every_steps: int = 50) -> None:
         self.every_steps = every_steps
@@ -168,14 +126,7 @@ def build_lora_model(model_id: str = config.BASE_MODEL_ID, device: str | None = 
 def oversample_rare_urgency(
     rows: list[dict], factor: int = None, seed: int = None
 ) -> list[dict]:
-    """Repeat rare-urgency examples so the model actually sees them.
-
-    With a 97/3 class split, a uniform 4k subset contains ~50 do-not-drive
-    examples -- too few against 3,900 majority-class cards, and the first
-    training run produced 0% recall on exactly the labels with a safety
-    consequence. Repetition is the bluntest possible rebalancing, but it needs
-    no new data and directly raises the gradient share of the rare classes.
-    """
+    """Repeat rare-urgency examples so the model actually sees them."""
     import random
 
     factor = factor if factor is not None else config.RARE_CLASS_OVERSAMPLE_FACTOR
@@ -196,7 +147,7 @@ def train_lora(
     """Fine-tune the LoRA adapter and save it to ``output_dir``."""
     device = config.resolve_device()
     if device == "cpu":
-        torch.set_num_threads(8)  # measured fastest on the M1 Pro dev machine
+        torch.set_num_threads(8)
     if max_examples is None:
         max_examples = config.MAX_TRAIN_EXAMPLES
     if max_examples:
@@ -231,8 +182,8 @@ def train_lora(
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        # Weights are already loaded in bfloat16 on GPU/MPS, so no autocast wrapper
-        # is needed; enabling it here would fail Trainer's CUDA capability check.
+
+
         bf16=False,
         report_to=[],
         remove_unused_columns=False,
@@ -280,18 +231,8 @@ def train_lora(
     return output_dir
 
 
-# --------------------------------------------------------------------------- #
-# Inference
-# --------------------------------------------------------------------------- #
-
-
 class RecallExplainer:
-    """Generates plain-language recall cards, with and without the adapter.
-
-    One copy of the base model is held in memory and the LoRA adapter is
-    switched on or off around each call, so the app can show a true
-    before / after comparison without paying for a second model.
-    """
+    """Generates plain-language recall cards, with and without the adapter."""
 
     MODE_BASE = "base"
     MODE_FEW_SHOT = "few_shot"
@@ -318,22 +259,12 @@ class RecallExplainer:
         self.model = model.to(self.device).eval()
         self.is_quantised = False
         if self.device == "cpu" and quantise and not self.has_adapter:
-            # Quantisation is skipped when an adapter is loaded: quantize_dynamic
-            # swaps every nn.Linear, including the ones inside LoRA wrappers, and
-            # PEFT then fails at generate time ("'function' object has no
-            # attribute 'dtype'" -- a quantised Linear exposes .weight as a
-            # method). Observed in production on the first deployment. The
-            # adapterless path (no fine-tune available) still benefits.
+
+
             self.is_quantised = self._quantise_for_cpu()
 
     def _quantise_for_cpu(self) -> bool:
-        """Apply int8 dynamic quantisation to the linear layers, if supported.
-
-        Roughly halves generation latency on a CPU host, which is what the free
-        deployment target runs on. The quantisation engine is unavailable in
-        some builds -- notably PyTorch on Apple silicon -- so a failure here is
-        expected and simply leaves the model in full precision.
-        """
+        """Apply int8 dynamic quantisation to the linear layers, if supported."""
         try:
             self.model = torch.quantization.quantize_dynamic(
                 self.model, {torch.nn.Linear}, dtype=torch.qint8
@@ -366,12 +297,7 @@ class RecallExplainer:
         mode: str = MODE_TUNED,
         max_new_tokens: int = config.MAX_NEW_TOKENS,
     ) -> str:
-        """Generate a recall card for one notice under the given mode.
-
-        ``base`` and ``few_shot`` run the untouched base model (adapter
-        disabled); ``tuned`` runs the fine-tuned model. Decoding is greedy so
-        the before / after comparison is deterministic and reproducible.
-        """
+        """Generate a recall card for one notice under the given mode."""
         if mode not in self.MODES:
             raise ValueError(f"unknown mode {mode!r}, expected one of {self.MODES}")
         if mode == self.MODE_TUNED and not self.has_adapter:
@@ -401,11 +327,7 @@ class RecallExplainer:
         max_new_tokens: int = config.MAX_NEW_TOKENS,
         batch_size: int = 8,
     ) -> list[str]:
-        """Generate cards for many notices, batching to keep evaluation tractable.
-
-        Padding is applied on the left so that every sequence in a batch ends at
-        the generation prompt, which is what decoder-only models require.
-        """
+        """Generate cards for many notices, batching to keep evaluation tractable."""
         original_side = self.tokenizer.padding_side
         self.tokenizer.padding_side = "left"
         outputs: list[str] = []

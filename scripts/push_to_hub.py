@@ -1,13 +1,7 @@
 """Publish the trained adapter to the Hugging Face Hub.
 
-Pushing the adapter means the deployed app can download ~35 MB of weights at
-start-up instead of carrying them in the container image, and it gives the
-project a citable model page.
-
-Requires an authenticated Hub session (``hf auth login``).
-
-    python -m scripts.push_to_hub                # adapter only
-    python -m scripts.push_to_hub --merged       # also push merged weights
+python -m scripts.push_to_hub                # adapter only
+python -m scripts.push_to_hub --merged       # also push merged weights
 """
 
 from __future__ import annotations
