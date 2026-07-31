@@ -305,5 +305,6 @@ history (PR #13) documents each.
 - Base model: [SmolLM2-360M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct), Apache 2.0.
 - LoRA: Hu et al., [*LoRA: Low-Rank Adaptation of Large Language Models*](https://arxiv.org/abs/2106.09685) (2021), via [PEFT](https://github.com/huggingface/peft).
 - Readability: Flesch-Kincaid grade level (Kincaid et al., 1975), implemented from the published formula in `scripts/plain_language.py`.
-- Built with assistance from Claude (Anthropic) for code scaffolding and review;
-  all data, training, and evaluation results are reproducible from this repository.
+- Portions of the code were developed with help from an AI coding assistant
+  and reviewed before merging; all data, training, and evaluation results are
+  reproducible from this repository.
