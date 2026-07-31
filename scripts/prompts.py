@@ -1,10 +1,4 @@
-"""Prompt construction shared by training, evaluation, and the web app.
-
-Keeping the prompt in one place matters for a fine-tuning project: the adapter
-learns a specific instruction format, so training and inference must agree
-exactly. The zero-shot and few-shot builders here are also the two *baselines*
-the fine-tuned model is measured against.
-"""
+"""Prompt construction shared by training, evaluation, and the web app."""
 
 from __future__ import annotations
 
@@ -26,10 +20,7 @@ INSTRUCTION = (
     "NOTICE:\n{notice}"
 )
 
-# Two hand-picked demonstrations for the few-shot baseline. They are drawn from
-# real campaigns and cover one high-urgency and one low-urgency case so the
-# baseline sees the full label range. Keeping this baseline strong is the point:
-# it isolates how much of the fine-tuned model's gain is more than formatting.
+
 FEW_SHOT_EXAMPLES: tuple[tuple[str, str], ...] = (
     (
         "Manufacturer: Chrysler (FCA US, LLC)\n"
@@ -86,12 +77,7 @@ def build_zero_shot_messages(notice: str) -> list[dict]:
 
 
 def build_few_shot_messages(notice: str) -> list[dict]:
-    """Return chat messages that prepend two worked examples to the instruction.
-
-    This is the strong prompting baseline: it gives the untuned model the same
-    format and label set that the adapter is trained on, at the cost of roughly
-    five times as many prompt tokens per request.
-    """
+    """Return chat messages that prepend two worked examples to the instruction."""
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for example_notice, example_card in FEW_SHOT_EXAMPLES:
         messages.append({"role": "user", "content": INSTRUCTION.format(notice=example_notice)})

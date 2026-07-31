@@ -1,8 +1,4 @@
-"""Tests for dataset construction, evaluation metrics, and the web API.
-
-These cover the parts of the system that do not need model weights, so the
-suite runs in a couple of seconds and is safe to run in CI.
-"""
+"""Tests for dataset construction, evaluation metrics, and the web API."""
 
 from __future__ import annotations
 
@@ -88,7 +84,7 @@ class SplitTests(unittest.TestCase):
 
     def test_duplicate_notices_are_removed(self) -> None:
         duplicated = self.records + [make_record("23V009000", "Ford Motor Company")]
-        # The fifth record repeats Ford's defect text verbatim.
+
         self.assertEqual(len(build_examples(duplicated)), 4)
 
     def test_held_out_brands_land_in_test_only(self) -> None:

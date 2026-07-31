@@ -1,10 +1,4 @@
-"""Download the base model into the image's HF cache at build time.
-
-Run from the Dockerfile. Baking the weights into the image removes the runtime
-dependency on huggingface.co, which is rate-limited from shared serving-host
-egress IPs (observed as a 429 on the app's first cold start). Retries cover
-the same throttling striking the build farm.
-"""
+"""Download the base model into the image's HF cache at build time."""
 
 from __future__ import annotations
 
@@ -25,7 +19,7 @@ def bake() -> None:
             snapshot_download(BASE_MODEL_ID, allow_patterns=WEIGHT_PATTERNS)
             print(f"baked {BASE_MODEL_ID} into the image cache")
             return
-        except Exception as error:  # noqa: BLE001 -- any network failure retries
+        except Exception as error:
             if attempt == ATTEMPTS - 1:
                 raise
             wait = 20 * (attempt + 1)

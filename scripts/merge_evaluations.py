@@ -1,12 +1,6 @@
 """Merge the v2 tuned-only evaluation into the full three-system results file.
 
-The base and few-shot baselines use the untuned model, which did not change
-between adapter versions, and both evaluations run on the identical stratified
-sample (fixed seed). Re-running the baselines would cost ~25 minutes to compute
-byte-identical numbers, so the v2 run scored only the tuned system and this
-script splices it into the v1 results file.
-
-    python -m scripts.merge_evaluations
+python -m scripts.merge_evaluations
 """
 
 from __future__ import annotations

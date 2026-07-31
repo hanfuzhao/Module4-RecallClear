@@ -1,13 +1,6 @@
 """Look up a live recall notice by its NHTSA campaign number.
 
 Uses the public NHTSA recalls API (https://api.nhtsa.gov), which returns the
-current text of a campaign plus the two official owner warnings. The web app
-calls this so a user can paste the campaign number from a letter they received
-and get the real notice, rather than typing it out.
-
-The official ``parkIt`` / ``parkOutSide`` flags returned here are authoritative
-and are displayed to the user directly; the model's own urgency call is shown
-separately and never overrides them.
 """
 
 from __future__ import annotations
@@ -20,8 +13,7 @@ from scripts import config
 
 NHTSA_CAMPAIGN_URL = "https://api.nhtsa.gov/recalls/campaignNumber"
 
-# Campaign numbers look like 23V123000: two-digit year, a type letter, then a
-# six-digit sequence. Users often type them without the trailing zeros.
+
 _CAMPAIGN_PATTERN = re.compile(r"^\s*(\d{2})\s*([VETC])\s*(\d{3,6})\s*$", re.IGNORECASE)
 
 
@@ -30,11 +22,7 @@ class CampaignNotFoundError(LookupError):
 
 
 def normalise_campaign_number(raw: str) -> str:
-    """Return a campaign number in NHTSA's canonical ``23V123000`` form.
-
-    Accepts the shorter forms people copy off a letter, such as ``23v123`` or
-    ``23-V-123``.
-    """
+    """Return a campaign number in NHTSA's canonical ``23V123000`` form."""
     match = _CAMPAIGN_PATTERN.match((raw or "").replace("-", "").replace(" ", ""))
     if not match:
         raise ValueError(
@@ -45,11 +33,7 @@ def normalise_campaign_number(raw: str) -> str:
 
 
 def fetch_campaign(raw_campaign_number: str, timeout: int = 15) -> dict:
-    """Fetch one campaign from NHTSA and return it in this project's schema.
-
-    Raises ``ValueError`` for a malformed number and ``CampaignNotFoundError``
-    when the campaign does not exist.
-    """
+    """Fetch one campaign from NHTSA and return it in this project's schema."""
     campaign_number = normalise_campaign_number(raw_campaign_number)
     response = requests.get(
         NHTSA_CAMPAIGN_URL,

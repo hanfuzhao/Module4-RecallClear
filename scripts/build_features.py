@@ -1,14 +1,6 @@
 """Turn raw NHTSA recall notices into supervised plain-language training data.
 
-Pipeline: raw JSONL -> reference card -> quality gate -> de-duplication ->
-brand-grouped train / validation / test splits.
-
-The test split is grouped by manufacturer (see ``config.HELD_OUT_BRANDS``): the
-model never sees a single notice from those brands during training, so test
-scores measure generalisation rather than memorisation.
-
-Run directly:
-    python -m scripts.build_features
+python -m scripts.build_features
 """
 
 from __future__ import annotations
@@ -31,7 +23,7 @@ from scripts.plain_language import (
 )
 from scripts.prompts import build_training_messages
 
-# Corporate suffixes stripped when reducing a manufacturer string to a brand.
+
 _LEGAL_SUFFIX = re.compile(
     r"\b(inc|llc|ltd|corp|corporation|company|co|gmbh|ag|sa|nv|plc|lp|holdings?|"
     r"group|usa|u\.s\.a|america|north|american|of|motors?|motor|automotive|"
@@ -41,11 +33,7 @@ _LEGAL_SUFFIX = re.compile(
 
 
 def brand_key(manufacturer: str) -> str:
-    """Reduce a manufacturer string to a coarse brand key.
-
-    ``"Subaru of America, Inc."`` and ``"Subaru Corporation"`` both become
-    ``"SUBARU"``, which is what the held-out split is grouped on.
-    """
+    """Reduce a manufacturer string to a coarse brand key."""
     name = re.sub(r"\([^)]*\)", " ", manufacturer or "")
     name = _LEGAL_SUFFIX.sub(" ", name)
     name = re.sub(r"[^A-Za-z0-9 ]+", " ", name)

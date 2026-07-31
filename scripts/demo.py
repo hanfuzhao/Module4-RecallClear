@@ -1,11 +1,8 @@
 """Print a before / after comparison for a single held-out recall notice.
 
-This is the terminal version of what the web app shows, and the quickest way to
-sanity-check an adapter after training:
-
-    python -m scripts.demo                       # first held-out example
-    python -m scripts.demo --campaign 23V123000  # a live notice from NHTSA
-    python -m scripts.demo --index 4 --modes base tuned
+python -m scripts.demo                       # first held-out example
+python -m scripts.demo --campaign 23V123000  # a live notice from NHTSA
+python -m scripts.demo --index 4 --modes base tuned
 """
 
 from __future__ import annotations

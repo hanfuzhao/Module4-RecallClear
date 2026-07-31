@@ -1,21 +1,7 @@
 """Download real vehicle safety-recall notices published by NHTSA.
 
-Source
-------
-"Recalls Data", U.S. DOT open-data portal (the public export of NHTSA's Office
-of Defects Investigation recalls table):
 https://data.transportation.gov/d/6axg-epim
-Public-domain U.S. government data, queried through the Socrata API; no key is
-required. The dataset holds every recall NHTSA has published, together with two
-official owner-warning flags, ``do_not_drive`` and ``fire_risk_when_parked``,
-which this project uses as gold urgency labels.
-
-Only ``recall_type == "Vehicle"`` records are kept, and only those issued from
-2013 onward: NHTSA stored notice text in ALL CAPS before 2013 and in normal
-sentence case afterwards, so the cut-off keeps one consistent text style.
-
-Run directly:
-    python -m scripts.make_dataset
+python -m scripts.make_dataset
 """
 
 from __future__ import annotations
@@ -30,7 +16,7 @@ import requests
 
 from scripts import config
 
-# Socrata column -> the canonical field names used throughout this project.
+
 FIELD_MAP = {
     "nhtsa_id": "campaign_number",
     "manufacturer": "manufacturer",
@@ -110,7 +96,7 @@ def build_where_clause(start_year: int, recall_type: str = "Vehicle") -> str:
 def normalise_row(row: dict) -> dict:
     """Map one Socrata row onto this project's canonical record schema."""
     record = {target: (row.get(source) or "").strip() for source, target in FIELD_MAP.items()}
-    # NHTSA's two official owner warnings, stored as "Yes"/"No" strings.
+
     record["park_it"] = (row.get("do_not_drive") or "").strip().lower() == "yes"
     record["park_outside"] = (row.get("fire_risk_when_parked") or "").strip().lower() == "yes"
     return record

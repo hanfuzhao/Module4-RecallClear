@@ -1,27 +1,6 @@
 """Evaluate the fine-tuned model against two untuned baselines.
 
-Three systems are compared on the held-out brands:
-
-* ``base``      -- Qwen2.5-0.5B-Instruct, zero-shot, same instruction.
-* ``few_shot``  -- the same untuned model with two worked examples prepended.
-                   This is the honest baseline: prompting alone can teach the
-                   format, so the fine-tune has to beat it on more than layout.
-* ``tuned``     -- the same model with the LoRA adapter enabled.
-
-Metrics
--------
-format_compliance   all five sections present, in the required order
-urgency_accuracy    exact match against NHTSA's gold urgency label
-urgency_macro_f1    macro-F1, which is what matters under 97/3 class imbalance
-grade_level         Flesch-Kincaid reading grade of the generated card
-jargon_rate         technical terms per 100 words
-free_repair_stated  says the repair costs the owner nothing (always true of recalls)
-phone_hallucination share of cards inventing a phone number absent from the notice
-grounding           share of card content words that appear in the source notice
-prompt_tokens       average prompt cost, the efficiency argument for tuning
-
-Run directly:
-    python -m scripts.evaluate_model --sample 150
+python -m scripts.evaluate_model --sample 150
 """
 
 from __future__ import annotations
@@ -52,8 +31,7 @@ _PHONE = re.compile(r"\b1?[-\s]?\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}\b")
 _WORD = re.compile(r"[a-z][a-z'-]{3,}")
 _FREE_REPAIR = re.compile(r"\bfree\b|\bno cost\b|\bnothing\b|\bno charge\b|\$0", re.IGNORECASE)
 
-# Wording that shows the notice itself carries NHTSA's stop-driving or
-# park-outside advice. Used to measure the ceiling on urgency recall.
+
 _WARNING_LANGUAGE = re.compile(
     r"do not drive|not to drive|stop driving|park (?:it )?outside|"
     r"away from (?:structures|buildings|homes)|do not park",
@@ -68,11 +46,6 @@ STOPWORDS = {
     "cost", "costs", "free", "call", "dealer", "dealers", "recall", "repair",
     "owner", "owners", "vehicle", "vehicles", "car", "cars",
 }
-
-
-# --------------------------------------------------------------------------- #
-# Per-card metrics
-# --------------------------------------------------------------------------- #
 
 
 def has_valid_format(card_text: str) -> bool:
@@ -100,22 +73,12 @@ def hallucinated_phone(card_text: str, notice: str) -> bool:
 
 
 def grounding_score(card_text: str, notice: str) -> float:
-    """Share of the card's content words that also appear in the source notice.
-
-    A crude but useful faithfulness proxy: a card built from the notice scores
-    high, a card that drifts into invented detail scores low. Boilerplate the
-    card is *supposed* to add (dealer, free, recall) is excluded via STOPWORDS.
-    """
+    """Share of the card's content words that also appear in the source notice."""
     card_words = {word for word in _WORD.findall(card_text.lower()) if word not in STOPWORDS}
     if not card_words:
         return 0.0
     notice_words = set(_WORD.findall(notice.lower()))
     return round(len(card_words & notice_words) / len(card_words), 4)
-
-
-# --------------------------------------------------------------------------- #
-# Aggregation
-# --------------------------------------------------------------------------- #
 
 
 def macro_f1(gold: list[str], predicted: list[str | None], labels: tuple[str, ...]) -> float:
@@ -148,12 +111,7 @@ def per_class_recall(gold: list[str], predicted: list[str | None]) -> dict[str, 
 
 
 def urgency_confusion(gold: list[str], predicted: list[str | None]) -> dict:
-    """Report the confusion pairs, and count safety-relevant downgrades.
-
-    Averaged scores hide the one error that carries a real-world cost: calling a
-    notice that NHTSA flagged as do-not-drive or park-outside something less
-    urgent. That count is surfaced on its own.
-    """
+    """Report the confusion pairs, and count safety-relevant downgrades."""
     severity = {level: index for index, level in enumerate(URGENCY_LEVELS)}
     pairs = Counter(
         (gold_label, predicted_label or "NOT STATED")
@@ -164,7 +122,7 @@ def urgency_confusion(gold: list[str], predicted: list[str | None]) -> dict:
     for gold_label, predicted_label in zip(gold, predicted):
         if gold_label not in (URGENCY_STOP_DRIVING, URGENCY_PARK_OUTSIDE):
             continue
-        # A missing prediction is treated as a downgrade: no warning was given.
+
         if predicted_label is None or severity[predicted_label] > severity[gold_label]:
             downgrades += 1
 
@@ -213,13 +171,7 @@ def score_generations(rows: list[dict], generations: list[str], elapsed: float) 
 
 
 def label_ceiling(rows: list[dict]) -> dict:
-    """Measure how often the gold urgency is even inferable from the notice text.
-
-    NHTSA's do-not-drive and park-outside flags are database metadata, not
-    always words in the notice. Where the notice carries no warning language, no
-    text-only model can recover the label; this reports that ceiling so the
-    urgency numbers are read honestly.
-    """
+    """Measure how often the gold urgency is even inferable from the notice text."""
     report = {}
     for label in (URGENCY_STOP_DRIVING, URGENCY_PARK_OUTSIDE):
         subset = [row for row in rows if row["urgency"] == label]
@@ -232,17 +184,8 @@ def label_ceiling(rows: list[dict]) -> dict:
     return report
 
 
-# --------------------------------------------------------------------------- #
-# Sampling and orchestration
-# --------------------------------------------------------------------------- #
-
-
 def stratified_sample(rows: list[dict], sample_size: int, seed: int = config.RANDOM_SEED) -> list[dict]:
-    """Sample the test set while keeping every rare urgency class represented.
-
-    A uniform sample of 150 from a 97 %-majority test set would contain almost
-    no do-not-drive cases, so the rare classes are taken in full first.
-    """
+    """Sample the test set while keeping every rare urgency class represented."""
     rng = random.Random(seed)
     rare = [row for row in rows if row["urgency"] in (URGENCY_STOP_DRIVING, URGENCY_PARK_OUTSIDE)]
     common = [row for row in rows if row not in rare]

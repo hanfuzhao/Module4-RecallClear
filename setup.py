@@ -1,12 +1,4 @@
-"""One-command project setup: download data, build features, train, evaluate.
-
-Each stage is skipped when its output already exists, so the script can be
-re-run safely and used to resume a partially completed setup.
-
-    python setup.py                 # run whatever is still missing
-    python setup.py --force         # rebuild everything from scratch
-    python setup.py --stages data features
-"""
+"""One-command project setup: download data, build features, train, evaluate."""
 
 from __future__ import annotations
 
@@ -129,7 +121,7 @@ def main() -> int:
         started = time.time()
         try:
             runner(arguments.force)
-        except Exception as error:  # surface the failing stage clearly
+        except Exception as error:
             print(f"\nStage '{stage}' failed: {error}", file=sys.stderr)
             return 1
         print(f"-- {stage} finished in {time.time() - started:.1f}s")

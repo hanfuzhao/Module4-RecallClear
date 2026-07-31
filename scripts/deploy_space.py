@@ -1,13 +1,7 @@
 """Deploy the RecallClear app to a Hugging Face Space (Docker SDK).
 
-Uploads only what the container needs: the app, the adapter, the held-out demo
-notices, and the evaluation summary. Raw data, checkpoints, and the training
-corpus stay out of the image.
-
-Requires an authenticated Hub session (``hf auth login``).
-
-    python -m scripts.deploy_space
-    python -m scripts.deploy_space --space-id someone/recallclear
+python -m scripts.deploy_space
+python -m scripts.deploy_space --space-id someone/recallclear
 """
 
 from __future__ import annotations
@@ -20,8 +14,7 @@ from huggingface_hub import HfApi
 
 from scripts import config
 
-# Space front-matter. `sdk: docker` tells Spaces to build our Dockerfile, and
-# `app_port` must match the port gunicorn binds inside the container.
+
 SPACE_CARD = """---
 title: RecallClear
 emoji: 🚗
@@ -53,7 +46,7 @@ park-outside warnings come from NHTSA's own flags, not from the model.
 - Data: [NHTSA Recalls Data](https://data.transportation.gov/d/6axg-epim) (public domain)
 """
 
-# Files copied into the Space repository, relative to the project root.
+
 OPTIONAL_DEPLOY_FILES = (
     "data/outputs/evaluation.json",
 )
